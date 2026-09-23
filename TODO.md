@@ -26,6 +26,8 @@ that require external accounts, providers, or deployment-specific decisions.
   non-root/read-only security controls, and optional existingSecret/Ingress.
 - Direct HTTPS is supported by `server.tls.cert` + `server.tls.key`, with
   configuration validation preventing one-sided TLS settings.
+- Business licensing now requires an Ed25519 signature, configured public key,
+  valid edition/org claims, and an optional non-expired `expires_at` claim.
 - Analyst API actions now support campaign grouping, blocklisting a domain from
   a submission, and local incident escalation with audit records.
 - `phishlens weights tune` now calibrates bounded signal weights from analyst

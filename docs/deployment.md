@@ -27,3 +27,8 @@ deploy/systemd/phishlens.service; секреты — в /etc/phishlens/env (OPEN
 сервер запустит `ListenAndServeTLS`. Если поля пусты, используется HTTP — это
 подходит для локальной разработки или TLS-терминации на ingress. Helm-пример и
 секреты сертификата описаны в `deploy/helm/README.md`.
+
+Business license keys are signed as `<base64url(payload)>.<base64url(signature)>`.
+Set the key in `PL_LICENSE_KEY` and the Ed25519 public key in
+`PL_LICENSE_PUBLIC_KEY` (raw base64url or hex). Invalid, tampered, or expired
+keys remain Community and do not unlock Business features.
