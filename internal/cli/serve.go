@@ -46,7 +46,7 @@ func newServeCmd() *cobra.Command {
 				imap.New(a.Cfg.Ingest.IMAP, imap.AnalyzeFunc(analyze), imap.ReplyFunc(func(ctx context.Context, to string, sub *domain.Submission) error {
 					return notify.SendEmailReply(ctx, a.Cfg.Ingest.IMAP, to, sub)
 				})),
-				graph.New(a.Cfg.Ingest.Graph),
+				graph.New(a.Cfg.Ingest.Graph, graph.AnalyzeFunc(analyze)),
 				telegram.New(a.Cfg.Ingest.Telegram, analyze),
 			).Start(ctx)
 			go retentionLoop(ctx, a)

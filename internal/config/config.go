@@ -181,11 +181,14 @@ type IMAP struct {
 }
 
 type Graph struct {
-	Enabled         bool   `mapstructure:"enabled"`
-	TenantID        string `mapstructure:"tenant_id"`
-	ClientID        string `mapstructure:"client_id"`
-	ClientSecretEnv string `mapstructure:"client_secret_env"`
-	Mailbox         string `mapstructure:"mailbox"`
+	Enabled         bool          `mapstructure:"enabled"`
+	TenantID        string        `mapstructure:"tenant_id"`
+	ClientID        string        `mapstructure:"client_id"`
+	ClientSecretEnv string        `mapstructure:"client_secret_env"`
+	Mailbox         string        `mapstructure:"mailbox"`
+	OrgID           string        `mapstructure:"org_id"`
+	StateFile       string        `mapstructure:"state_file"`
+	PollInterval    time.Duration `mapstructure:"poll_interval"`
 }
 
 type Telegram struct {
@@ -391,6 +394,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("ingest.imap.smtp_password_env", "SMTP_PASS")
 	v.SetDefault("ingest.graph.enabled", false)
 	v.SetDefault("ingest.graph.client_secret_env", "GRAPH_SECRET")
+	v.SetDefault("ingest.graph.state_file", "var/graph-delta.token")
+	v.SetDefault("ingest.graph.poll_interval", "60s")
 	v.SetDefault("ingest.telegram.enabled", false)
 	v.SetDefault("ingest.telegram.token_env", "TG_TOKEN")
 

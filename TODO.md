@@ -73,6 +73,10 @@ that require external accounts, providers, or deployment-specific decisions.
   `.eml` through the shared analyzer, marks only successful messages as seen,
   optionally moves them to `processed_folder`, and supports an explicit
   privacy-safe SMTP verdict reply.
+- Microsoft Graph receiver now uses client-credentials OAuth, mailbox delta
+  polling, bounded MIME `$value` downloads, shared analysis, `isRead` updates,
+  and a private persisted delta cursor. Live Azure app permissions and tenant
+  validation remain external gates.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
@@ -103,7 +107,7 @@ that require external accounts, providers, or deployment-specific decisions.
 
 ## Business / external gates (not locally provable)
 
-- Microsoft Graph, Gmail add-in host validation, and live IMAP/Outlook/M365
+- Gmail add-in host validation and live IMAP/Graph/Outlook/M365
   provider/host validation, plus Telegram bot/token verification.
 - Configure and verify a real URLhaus Auth-Key; without it the provider is explicitly degraded to unknown.
 - Live Safe Browsing/AbuseIPDB/VirusTotal accounts and rate limits.

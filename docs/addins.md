@@ -25,3 +25,9 @@ addins/gmail/Code.gs + appsscript.json: Apps Script add-on, Script Properties PH
 message to 25 MiB, analyzes the complete `.eml`, marks successful messages as
 seen and can move them to `processed_folder`. SMTP verdict replies require
 explicit `smtp_host`, `smtp_from` and optional authentication settings.
+
+## Microsoft Graph (F-4.1.5)
+`internal/ingest/graph` uses client-credentials OAuth and the mailbox delta
+endpoint, downloads each new message as MIME with a 25 MiB bound, analyzes it,
+marks it read and persists the delta cursor in `state_file` (mode 0600 on
+Unix). Configure Azure application permissions before enabling it.

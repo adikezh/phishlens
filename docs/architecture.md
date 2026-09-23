@@ -32,7 +32,7 @@
 | `parse.OCR` | `internal/parse` | `TesseractOCR` (HTTP к контейнеру), vision-LLM — TODO |
 | `store.Store` | `internal/store` | `SQLite` (modernc) and PostgreSQL (pgx), shared contract/migrations |
 | `notify.Notifier` | `internal/notify` | HMAC webhook (static and encrypted org subscriptions), privacy-safe Wazuh HTTP delivery, and TheHive 5 alert API |
-| `ingest.Runner` | `internal/ingest` | IMAPS and Telegram Bot API implemented; Microsoft Graph remains TODO |
+| `ingest.Runner` | `internal/ingest` | IMAPS, Microsoft Graph delta, and Telegram Bot API implemented |
 
 Browser OIDC login is implemented in `internal/httpapi/oidc.go`: discovery,
 authorization state, nonce and audience verification, signed HttpOnly sessions,

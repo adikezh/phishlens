@@ -63,7 +63,7 @@ sandbox: { enabled: false, url: "http://sandbox:9222", screenshot: true }
 
 ingest:
   imap: { enabled: false, host: "", user: "", password_env: IMAP_PASS, folder: "INBOX", processed_folder: "Processed", org_id: "", poll_interval: 30s, reply_with_verdict: true, smtp_host: "", smtp_port: 587, smtp_user: "", smtp_password_env: SMTP_PASS, smtp_from: "" }
-  graph: { enabled: false, tenant_id: "", client_id: "", client_secret_env: GRAPH_SECRET, mailbox: "phish@company.kz" }
+  graph: { enabled: false, tenant_id: "", client_id: "", client_secret_env: GRAPH_SECRET, mailbox: "phish@company.kz", org_id: "", state_file: "var/graph-delta.token", poll_interval: 60s }
   telegram: { enabled: false, token_env: TG_TOKEN }
 
 integrations:
