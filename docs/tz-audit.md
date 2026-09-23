@@ -27,7 +27,7 @@ customer pilot.
 - a licensed/public real-world corpus and a representative multilingual OCR
   corpus; the current F1 gate uses 200 reproducible synthetic messages;
 - a public HTTPS demo. Registry publication is verified for the current
-  Community release (`ghcr.io/adikezh/phishlens:v0.2.4`); the public demo still
+  Community release (`ghcr.io/adikezh/phishlens:v0.2.5`); the public demo still
   requires a real HTTPS deployment.
 - live M365/Gmail/IMAP/Telegram, OIDC, Wazuh/SOAR and reputation-provider
   credentials, permissions, rate limits, and provider responses;

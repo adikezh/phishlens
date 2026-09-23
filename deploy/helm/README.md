@@ -6,7 +6,7 @@ capabilities, a memory-backed `/tmp`, and no service-account token mount.
 
 ```bash
 helm install phishlens ./deploy/helm \
-  --set image.tag=v0.2.4 \
+  --set image.tag=v0.2.5 \
   --set existingSecret=phishlens-secrets
 ```
 
