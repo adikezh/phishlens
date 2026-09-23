@@ -254,7 +254,7 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 	if r, ok := c.getListCache(ctx, key); ok {
 		return r.listed, r.source, nil
 	}
-	providerError := false
+	var providerError error
 	if c.cfg.URLhaus.Enabled {
 		var listed bool
 		var err error
@@ -268,7 +268,7 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 			c.setListCache(ctx, key, listResult{true, "urlhaus"}, 12*time.Hour)
 			return true, "urlhaus", nil
 		} else if err != nil {
-			providerError = true
+			providerError = err
 		}
 	}
 	if c.cfg.OpenPhish.Enabled {
@@ -284,7 +284,9 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 			c.setListCache(ctx, key, listResult{true, "openphish"}, 12*time.Hour)
 			return true, "openphish", nil
 		} else if err != nil {
-			providerError = true
+			if providerError == nil {
+				providerError = err
+			}
 		}
 	}
 	if c.cfg.SafeBrowsing.Enabled {
@@ -300,14 +302,15 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 			c.setListCache(ctx, key, listResult{true, "safebrowsing"}, 12*time.Hour)
 			return true, "safebrowsing", nil
 		}
-		if err != nil {
-			providerError = true
+		if err != nil && providerError == nil {
+			providerError = err
 		}
 	}
-	if !providerError {
+	if providerError == nil {
 		c.setListCache(ctx, key, listResult{false, ""}, 6*time.Hour)
+		return false, "", nil
 	}
-	return false, "", nil
+	return false, "", fmt.Errorf("domain reputation: %w", providerError)
 }
 
 // FileHashListed checks VirusTotal by hash only. The file bytes are never sent.

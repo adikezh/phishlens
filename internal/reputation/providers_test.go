@@ -7,7 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
+
+	"github.com/phishlens/phishlens/internal/config"
 )
 
 func TestReverseIPForDNSBL(t *testing.T) {
@@ -17,6 +20,15 @@ func TestReverseIPForDNSBL(t *testing.T) {
 		reverseIP(net.ParseIP("2001:db8::1")),
 	)
 	require.Empty(t, reverseIP(nil))
+}
+
+func TestDomainListedSurfacesProviderFailure(t *testing.T) {
+	c := New(config.Reputation{URLhaus: config.URLhaus{Enabled: true}}, "", zerolog.Nop())
+	listed, source, err := c.DomainListed(context.Background(), "example.test")
+	require.Error(t, err)
+	require.False(t, listed)
+	require.Empty(t, source)
+	require.Contains(t, err.Error(), "auth key is not configured")
 }
 
 func TestSafeBrowsingLookup(t *testing.T) {
