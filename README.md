@@ -85,6 +85,11 @@ weights to -100..100. Review the output before using it as a pilot override.
 
 ![Локальное демо PhishLens](docs/assets/phishlens-demo.gif)
 
+Публичный [статический landing](https://adikezh.github.io/phishlens/) доступен
+отдельно. Для настоящего HTTPS API demo используйте
+[`docs/public-demo-deployment.md`](docs/public-demo-deployment.md); он требует
+ваш Kubernetes/Ingress и не содержит фиктивных credentials.
+
 Схема конвейера и границы компонентов описаны в [architecture.md](docs/architecture.md),
 а сравнение с PhishTool, CheckPhish и Sublime — на `/landing`.
 Performance acceptance is documented in [performance.md](docs/performance.md).
