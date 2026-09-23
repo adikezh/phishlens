@@ -1,6 +1,6 @@
 // Package notify pushes verdicts to SIEM/SOAR and back to the reporter (ТЗ §4.9):
-// HMAC-signed webhook, configured Wazuh HTTP delivery, and TheHive 5 alert
-// delivery are implemented; IRIS/Jira and e-mail replies remain optional.
+// HMAC-signed webhook, Wazuh, TheHive 5, DFIR-IRIS and Jira delivery are
+// implemented; e-mail replies remain optional.
 package notify
 
 import (
@@ -84,6 +84,12 @@ func NewFanout(cfg config.Integrations, log zerolog.Logger) *Fanout {
 	}
 	if cfg.TheHive.Enabled {
 		f.notifiers = append(f.notifiers, NewTheHive(cfg.TheHive, os.Getenv(cfg.TheHive.APIKeyEnv)))
+	}
+	if cfg.IRIS.Enabled {
+		f.notifiers = append(f.notifiers, NewIRIS(cfg.IRIS, os.Getenv(cfg.IRIS.APIKeyEnv)))
+	}
+	if cfg.Jira.Enabled {
+		f.notifiers = append(f.notifiers, NewJira(cfg.Jira, os.Getenv(cfg.Jira.UserEnv), os.Getenv(cfg.Jira.TokenEnv)))
 	}
 	return f
 }

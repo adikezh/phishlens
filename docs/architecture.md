@@ -31,7 +31,7 @@
 | `llm.Provider` | `internal/llm` | `OpenAICompatible`, `Anthropic` (official SDK), `Ollama` |
 | `parse.OCR` | `internal/parse` | `TesseractOCR` or vision-LLM through Ollama/OpenAI-compatible provider |
 | `store.Store` | `internal/store` | `SQLite` (modernc) and PostgreSQL (pgx), shared contract/migrations |
-| `notify.Notifier` | `internal/notify` | HMAC webhook (static and encrypted org subscriptions), privacy-safe Wazuh HTTP delivery, and TheHive 5 alert API |
+| `notify.Notifier` | `internal/notify` | HMAC webhook (static and encrypted org subscriptions), privacy-safe Wazuh, TheHive 5, DFIR-IRIS v2, and Jira REST delivery |
 | `ingest.Runner` | `internal/ingest` | IMAPS, Microsoft Graph delta, and Telegram Bot API implemented |
 
 Browser OIDC login is implemented in `internal/httpapi/oidc.go`: discovery,

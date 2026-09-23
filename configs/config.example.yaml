@@ -70,6 +70,8 @@ integrations:
   wazuh: { enabled: false, api_url: "", user: "", password_env: WAZUH_PASS, min_verdict: suspicious }
   webhook: { enabled: false, url: "", secret_env: WEBHOOK_SECRET }
   thehive: { enabled: false, api_url: "", api_key_env: THEHIVE_API_KEY, organisation: "", min_verdict: suspicious }
+  iris: { enabled: false, api_url: "", api_key_env: IRIS_API_KEY, customer_id: 1, min_verdict: suspicious }
+  jira: { enabled: false, api_url: "", project_key: SOC, issue_type: Task, user_env: JIRA_USER, token_env: JIRA_TOKEN, min_verdict: suspicious }
 
 auth:
   anonymous_analyze: true    # для демо; в проде false

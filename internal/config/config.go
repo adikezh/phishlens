@@ -225,10 +225,34 @@ type TheHive struct {
 	MinVerdict   string `mapstructure:"min_verdict"`
 }
 
+// IRIS is the DFIR-IRIS v2 case API configuration.
+type IRIS struct {
+	Enabled    bool   `mapstructure:"enabled"`
+	APIURL     string `mapstructure:"api_url"`
+	APIKeyEnv  string `mapstructure:"api_key_env"`
+	CustomerID int    `mapstructure:"customer_id"`
+	MinVerdict string `mapstructure:"min_verdict"`
+}
+
+// Jira is the Jira REST issue API configuration. UserEnv and TokenEnv are
+// used for Jira Cloud basic authentication; TokenEnv may also contain a
+// bearer token when UserEnv is empty.
+type Jira struct {
+	Enabled    bool   `mapstructure:"enabled"`
+	APIURL     string `mapstructure:"api_url"`
+	ProjectKey string `mapstructure:"project_key"`
+	IssueType  string `mapstructure:"issue_type"`
+	UserEnv    string `mapstructure:"user_env"`
+	TokenEnv   string `mapstructure:"token_env"`
+	MinVerdict string `mapstructure:"min_verdict"`
+}
+
 type Integrations struct {
 	Wazuh   Wazuh   `mapstructure:"wazuh"`
 	Webhook Webhook `mapstructure:"webhook"`
 	TheHive TheHive `mapstructure:"thehive"`
+	IRIS    IRIS    `mapstructure:"iris"`
+	Jira    Jira    `mapstructure:"jira"`
 }
 
 type OIDC struct {

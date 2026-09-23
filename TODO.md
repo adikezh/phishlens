@@ -141,8 +141,7 @@ that require external accounts, providers, or deployment-specific decisions.
 - Configure and verify a real URLhaus Auth-Key; without it the provider is explicitly degraded to unknown.
 - Safe Browsing, AbuseIPDB, and VirusTotal integrations are implemented with bounded HTTP clients and fail-closed-to-unknown behavior; live account/key/rate-limit verification remains external.
 - Live OIDC IdP/group/tenant verification, multi-tenant production isolation,
-  live TheHive account verification,
-  and IRIS/Jira account integration.
+  live TheHive/IRIS/Jira account verification.
 - Sandbox client, SSRF checks, L-05 login-form signal, and Chrome image entrypoint are implemented; isolated deployment, egress proxy policy, and live browser smoke evidence remain external.
 - Pilot evidence: one organization, two weeks, at least 20 real submissions,
   measured false positives/negatives, and owner-approved weight changes.
