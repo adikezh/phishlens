@@ -33,7 +33,7 @@ auth_checks:
 reputation:
   rdap: { enabled: true, cache_ttl: 168h }
   dnsbl: ["zen.spamhaus.org"]
-  urlhaus: { enabled: true }
+  urlhaus: { enabled: true, auth_key_env: URLHAUS_AUTH_KEY }
   openphish: { enabled: true }
   safebrowsing: { enabled: false, api_key_env: GSB_KEY }
   abuseipdb: { enabled: false, key_env: ABUSEIPDB_KEY }

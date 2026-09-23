@@ -78,6 +78,11 @@ type Toggle struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
+type URLhaus struct {
+	Enabled    bool   `mapstructure:"enabled"`
+	AuthKeyEnv string `mapstructure:"auth_key_env"`
+}
+
 type RDAP struct {
 	Enabled  bool          `mapstructure:"enabled"`
 	CacheTTL time.Duration `mapstructure:"cache_ttl"`
@@ -108,7 +113,7 @@ type LinkExpansion struct {
 type Reputation struct {
 	RDAP          RDAP          `mapstructure:"rdap"`
 	DNSBL         []string      `mapstructure:"dnsbl"`
-	URLhaus       Toggle        `mapstructure:"urlhaus"`
+	URLhaus       URLhaus       `mapstructure:"urlhaus"`
 	OpenPhish     Toggle        `mapstructure:"openphish"`
 	SafeBrowsing  SafeBrowsing  `mapstructure:"safebrowsing"`
 	AbuseIPDB     KeyedService  `mapstructure:"abuseipdb"`
@@ -304,6 +309,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("reputation.rdap.cache_ttl", "168h")
 	v.SetDefault("reputation.dnsbl", []string{"zen.spamhaus.org"})
 	v.SetDefault("reputation.urlhaus.enabled", true)
+	v.SetDefault("reputation.urlhaus.auth_key_env", "URLHAUS_AUTH_KEY")
 	v.SetDefault("reputation.openphish.enabled", true)
 	v.SetDefault("reputation.safebrowsing.enabled", false)
 	v.SetDefault("reputation.safebrowsing.api_key_env", "GSB_KEY")

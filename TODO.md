@@ -39,7 +39,8 @@ that require external accounts, providers, or deployment-specific decisions.
 ## Business / external gates (not locally provable)
 
 - IMAP, Microsoft Graph, Telegram, Outlook/Gmail add-in host validation.
-- Live TI/RDAP/Safe Browsing/AbuseIPDB/VirusTotal accounts and rate limits.
+- Configure and verify a real URLhaus Auth-Key; without it the provider is explicitly degraded to unknown.
+- Live Safe Browsing/AbuseIPDB/VirusTotal accounts and rate limits.
 - OIDC, multi-tenant production isolation, SIEM/SOAR account integration.
 - Sandbox isolation and browser detonation evidence.
 - Pilot evidence: one organization, two weeks, at least 20 real submissions,

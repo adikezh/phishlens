@@ -1,7 +1,7 @@
-// Package reputation implements signals.ReputationLookup: DNSBL (R-01) is real,
-// TI feeds (URLhaus/OpenPhish, R-02), RDAP age (D-01), AbuseIPDB, Safe Browsing
-// and VirusTotal are stubs behind the same interface. All lookups are cached and
-// bounded by config timeouts; failures degrade to "unknown".
+// Package reputation implements signals.ReputationLookup: DNSBL, OpenPhish and
+// RDAP are available; URLhaus requires its configured Auth-Key. AbuseIPDB, Safe
+// Browsing and VirusTotal remain optional integrations. Provider failures degrade
+// to "unknown" and never create a positive signal.
 //
 // TODO(§5): sony/gobreaker per external service; persist cache in reputation_cache table.
 package reputation
@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -104,14 +105,14 @@ func (c *Client) IPListed(ctx context.Context, ip string) (bool, string, error) 
 	return false, "", nil
 }
 
-// DomainListed checks the local list, then TI feeds (stubs) (R-02 / D-02).
+// DomainListed checks the local list, then enabled TI feeds (R-02 / D-02).
 func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string, error) {
 	domain = strings.ToLower(domain)
 	if _, ok := c.local[domain]; ok {
 		return true, "local", nil
 	}
 	if c.cfg.URLhaus.Enabled {
-		if listed, err := urlhausLookup(ctx, domain); err == nil && listed {
+		if listed, err := urlhausLookup(ctx, domain, os.Getenv(c.cfg.URLhaus.AuthKeyEnv)); err == nil && listed {
 			return true, "urlhaus", nil
 		}
 	}
@@ -123,7 +124,7 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 	return false, "", nil
 }
 
-// DomainAge returns the registration age via RDAP (D-01); stub → unknown.
+// DomainAge returns the registration age via RDAP (D-01).
 func (c *Client) DomainAge(ctx context.Context, domain string) (time.Duration, bool, error) {
 	if !c.cfg.RDAP.Enabled {
 		return 0, false, nil
@@ -134,10 +135,9 @@ func (c *Client) DomainAge(ctx context.Context, domain string) (time.Duration, b
 	}
 	age, err := rdapAge(ctx, domain)
 	if err != nil {
-		if errors.Is(err, ErrNotImplemented) {
-			return 0, false, nil
-		}
-		return 0, false, err
+		// Provider outages, rate limits, and incomplete registry data are an
+		// unavailable signal, never a reason to fail or add a positive score.
+		return 0, false, nil
 	}
 	ttl := c.cfg.RDAP.CacheTTL
 	if ttl <= 0 {

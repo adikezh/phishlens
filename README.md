@@ -38,7 +38,7 @@ internal/domain       модель данных (Submission, ParsedMail, Signal,
 internal/parse        eml / msg / text / image → ParsedMail
 internal/signals      одна папка на категорию, один файл на сигнал; registry
 internal/brands       brands.yaml, matcher (домен / ключевые слова / homoglyph)
-internal/reputation   DNSBL, RDAP, TI-источники (заглушки + интерфейсы)
+internal/reputation   DNSBL, RDAP, OpenPhish, optional authenticated URLhaus
 internal/llm          провайдеры (openai_compatible, anthropic, ollama), редакция PII, схема
 internal/score        веса, пороги, жёсткие правила, вердикт
 internal/store        SQLite (modernc) / Postgres (TODO), миграции
