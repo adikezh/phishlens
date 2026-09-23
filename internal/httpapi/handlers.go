@@ -352,7 +352,10 @@ func (s *Server) handleReview(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "bad_request", "invalid status")
 		return
 	}
-	p := PrincipalFrom(r.Context())
+	_, p, ok := s.submissionForActor(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 	if err := s.app.Store.UpdateSubmissionStatus(r.Context(), id, st, p.Name); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
@@ -525,6 +528,10 @@ func (s *Server) handleDeleteSubmission(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusNotFound, "not_found", "storage disabled")
 		return
 	}
+	_, p, ok := s.submissionForActor(w, r)
+	if !ok {
+		return
+	}
 	id := chi.URLParam(r, "id")
 	if err := s.app.Store.DeleteSubmission(r.Context(), id); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
@@ -534,7 +541,6 @@ func (s *Server) handleDeleteSubmission(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusInternalServerError, "internal", err.Error())
 		return
 	}
-	p := PrincipalFrom(r.Context())
 	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "submission.delete", Target: id})
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -278,6 +278,45 @@ func TestUserCanReportSubmission(t *testing.T) {
 	require.Equal(t, domain.StatusInReview, got.Status)
 }
 
+func TestSubmissionMutationsAreOrgScoped(t *testing.T) {
+	srv, a := newTestServer(t)
+	newKey := func(name, org string) string {
+		key, err := GenerateKey()
+		require.NoError(t, err)
+		require.NoError(t, a.Store.CreateAPIKey(context.Background(), store.APIKey{
+			ID: ulid.Make().String(), Name: name, Role: RoleAdmin, OrgID: org, KeyHash: HashKey(key), CreatedAt: time.Now(),
+		}))
+		return key
+	}
+	orgA, orgB := newKey("org-a-admin", "org-a"), newKey("org-b-admin", "org-b")
+
+	body, err := json.Marshal(map[string]any{"text": "Please review https://example.com", "channel": "outlook"})
+	require.NoError(t, err)
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/v1/analyze", bytes.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+orgA)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	var out AnalyzeResponse
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&out))
+	resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	mutate := func(method string) int {
+		req, err := http.NewRequest(method, srv.URL+"/v1/submissions/"+out.ID, strings.NewReader(`{"status":"confirmed_phish"}`))
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer "+orgB)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		return resp.StatusCode
+	}
+	require.Equal(t, http.StatusNotFound, mutate(http.MethodPatch))
+	require.Equal(t, http.StatusNotFound, mutate(http.MethodDelete))
+}
+
 func TestAdminCanExportSubjectDataWithinOrg(t *testing.T) {
 	srv, a := newTestServer(t)
 	admin, err := GenerateKey()
