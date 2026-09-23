@@ -15,13 +15,15 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/html/charset"
+
 	"github.com/phishlens/phishlens/internal/domain"
 )
 
-// wordDecoder decodes RFC 2047 headers; unknown charsets pass through as raw bytes
-// instead of failing. TODO: golang.org/x/text/encoding for cp1251/koi8-r.
+// wordDecoder decodes RFC 2047 headers, including common Cyrillic legacy
+// encodings used by Russian mail clients.
 var wordDecoder = mime.WordDecoder{
-	CharsetReader: func(_ string, input io.Reader) (io.Reader, error) { return input, nil },
+	CharsetReader: charset.NewReaderLabel,
 }
 
 var (
@@ -128,9 +130,9 @@ func (p *Parser) walkBody(pm *domain.ParsedMail, h textproto.MIMEHeader, body io
 	case isAttachment:
 		pm.Attachments = append(pm.Attachments, p.attachmentFrom(filename, mediaType, content))
 	case mediaType == "text/plain":
-		pm.TextBody = appendText(pm.TextBody, string(content))
+		pm.TextBody = appendText(pm.TextBody, string(decodeText(content, params["charset"])))
 	case mediaType == "text/html":
-		pm.HTMLBody = appendText(pm.HTMLBody, string(content))
+		pm.HTMLBody = appendText(pm.HTMLBody, string(decodeText(content, params["charset"])))
 	case strings.HasPrefix(mediaType, "image/"):
 		img := imageFrom(content, mediaType, p.Limits.MaxImagePixels)
 		img.ContentID = strings.Trim(h.Get("Content-ID"), "<>")
@@ -151,6 +153,21 @@ func (p *Parser) walkBody(pm *domain.ParsedMail, h textproto.MIMEHeader, body io
 		pm.Attachments = append(pm.Attachments, p.attachmentFrom(filename, mediaType, content))
 	}
 	return nil
+}
+
+func decodeText(content []byte, label string) []byte {
+	if strings.TrimSpace(label) == "" {
+		return content
+	}
+	reader, err := charset.NewReaderLabel(label, bytes.NewReader(content))
+	if err != nil {
+		return content
+	}
+	decoded, err := io.ReadAll(reader)
+	if err != nil {
+		return content
+	}
+	return decoded
 }
 
 func appendText(dst, add string) string {

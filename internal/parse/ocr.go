@@ -68,5 +68,3 @@ func (t *TesseractOCR) Extract(ctx context.Context, img []byte, mime string) (st
 	}
 	return out.Text, append(out.URLs, ExtractURLs(out.Text)...), nil
 }
-
-// TODO(F-4.1.9): VisionOCR — llm.Provider with vision model + prompts/vision_extract_v1.txt.

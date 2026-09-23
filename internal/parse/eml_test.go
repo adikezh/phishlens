@@ -2,6 +2,7 @@ package parse
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -94,6 +95,15 @@ func TestMultipartWithAttachment(t *testing.T) {
 	require.Equal(t, "exe", a.Ext)
 	require.Len(t, a.SHA256, 64)
 	require.Greater(t, a.Size, int64(0))
+}
+
+func TestEMLDecodesLegacyCyrillicCharset(t *testing.T) {
+	raw := []byte("From: sender@example.com\r\n" +
+		"Content-Type: text/plain; charset=windows-1251\r\n\r\n" +
+		"\xD1\xF0\xEE\xF7\xED\xEE: \xEF\xF0\xEE\xE2\xE5\xF0\xFC\xF2\xE5")
+	m, err := New().EML(raw)
+	require.NoError(t, err)
+	require.True(t, strings.Contains(m.TextBody, "Срочно"), "decoded body: %q", m.TextBody)
 }
 
 func TestDepthLimit(t *testing.T) {

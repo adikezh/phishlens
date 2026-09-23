@@ -9,8 +9,8 @@ import (
 	"github.com/phishlens/phishlens/internal/signals"
 )
 
-// L-06: links point to many unrelated registrable domains.
-// TODO: cloud form hosts (Google Forms, Typeform) combined with credential keywords.
+// L-06: links point to many unrelated registrable domains. Cloud-form links
+// with credential keywords are registered separately in l04_l06_specialized.go.
 func manyDomains(_ context.Context, in *signals.Input) ([]domain.Signal, error) {
 	regs := map[string]bool{}
 	for _, h := range in.Mail.LinkDomains() {
