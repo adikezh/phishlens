@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PhishLens — объяснимый anti-phishing core</title>
+  <style>
+    :root { color-scheme: light; --ink:#10222b; --muted:#53656d; --paper:#fff; --bg:#f4f7f8; --amber:#f5b82e; --red:#a51d2d; }
+    * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif; }
+    .wrap { max-width:1120px; margin:auto; padding:0 24px; } header { display:flex; justify-content:space-between; align-items:center; padding:24px 0; }
+    a { color:inherit; } .button { display:inline-block; padding:11px 17px; border-radius:8px; background:var(--ink); color:#fff; text-decoration:none; font-weight:700; }
+    .button.alt { background:var(--amber); color:var(--ink); } .hero { display:grid; grid-template-columns:1.15fr .85fr; gap:42px; align-items:center; padding:68px 0 52px; }
+    h1 { margin:0; font-size:clamp(2.5rem,6vw,4.8rem); line-height:1.05; letter-spacing:-.04em; } h2 { margin-top:0; }
+    .eyebrow { color:#9a6500; font-size:.8rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+    .lead { color:var(--muted); font-size:1.18rem; max-width:680px; } .actions { display:flex; gap:12px; flex-wrap:wrap; margin-top:28px; }
+    .card, .demo { background:var(--paper); border:1px solid #e2e8ea; border-radius:16px; padding:24px; box-shadow:0 8px 28px #10222b0d; }
+    .score { color:var(--red); font-size:1.8rem; font-weight:800; } .signals { display:grid; gap:9px; margin-top:18px; }
+    .signal { background:#fff1f2; border-radius:8px; padding:9px 12px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:.88rem; }
+    .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding:28px 0 52px; } .muted { color:var(--muted); }
+    .demos { padding:20px 0 64px; } .demo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; } .demo code { font-size:.85rem; }
+    footer { border-top:1px solid #dce4e7; padding:24px 0 42px; color:var(--muted); font-size:.9rem; }
+    @media (max-width:760px) { .hero,.grid,.demo-grid { grid-template-columns:1fr; } header { gap:12px; } }
+  </style>
+</head>
+<body>
+  <header class="wrap"><strong>PhishLens</strong><a class="button" href="https://github.com/adikezh/phishlens">GitHub</a></header>
+  <main class="wrap">
+    <section class="hero">
+      <div><div class="eyebrow">Self-hosted anti-phishing</div><h1>Поймите, почему письмо опасно.</h1>
+        <p class="lead">PhishLens анализирует заголовки, ссылки, домены, вложения и признаки социальной инженерии. Результат объясняется сигналами и доказательствами, а не только одним баллом.</p>
+        <div class="actions"><a class="button alt" href="https://github.com/adikezh/phishlens#quick-start">Запустить локальное демо</a><a class="button" href="https://github.com/adikezh/phishlens/blob/main/docs/api.md">API</a></div>
+      </div>
+      <div class="card"><div class="muted">Пример результата</div><div class="score">Фишинг · 92/100</div><p class="muted">Поддельный домен бренда, запрос кода из SMS и ссылка на форму входа.</p><div class="signals"><div class="signal">domain.brand_lookalike</div><div class="signal">content.sms_code_request</div><div class="signal">link.login_form</div></div></div>
+    </section>
+    <section class="grid"><div class="card"><h2>60 сигналов</h2><p class="muted">Детерминированные проверки с доказательствами и локализацией ru/en/kz.</p></div><div class="card"><h2>Privacy-first</h2><p class="muted">Community core не сохраняет тела писем и умеет работать без внешних провайдеров.</p></div><div class="card"><h2>Для ИБ</h2><p class="muted">Очередь, отчёты, IOC и интеграции Wazuh, TheHive, IRIS и Jira.</p></div></section>
+    <section class="demos"><h2>Встроенные demonstrations</h2><p class="muted">Три примера запускаются локально через Compose/API. Публичный backend demo требует отдельного HTTPS deployment.</p><div class="demo-grid"><div class="demo"><strong>phish_kaspi_01</strong><p class="muted">Фишинг бренда и look-alike ссылка.</p><code>POST /v1/analyze · demo=phish_kaspi_01</code></div><div class="demo"><strong>bec_ceo_01</strong><p class="muted">BEC и срочный платёж.</p><code>POST /v1/analyze · demo=bec_ceo_01</code></div><div class="demo"><strong>clean_bank_01</strong><p class="muted">Чистое письмо с валидной аутентификацией.</p><code>POST /v1/analyze · demo=clean_bank_01</code></div></div></section>
+  </main>
+  <footer><div class="wrap">PhishLens Community · <a href="https://github.com/adikezh/phishlens/blob/main/docs/tz-audit.md">матрица соответствия ТЗ</a> · <a href="https://github.com/adikezh/phishlens/blob/main/TODO.md">остаток работ</a></div></footer>
+</body>
+</html>
