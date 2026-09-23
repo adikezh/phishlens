@@ -17,6 +17,8 @@ that require external accounts, providers, or deployment-specific decisions.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
+- Local `govulncheck ./...` reports no vulnerabilities in reachable code paths;
+  one unrelated vulnerability remains in a required-but-unreachable module.
 
 ## Community v1 gates still to close
 
