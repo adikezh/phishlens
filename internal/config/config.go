@@ -135,12 +135,14 @@ type OCR struct {
 }
 
 type LLMProvider struct {
-	Name        string `mapstructure:"name" validate:"required"`
-	Type        string `mapstructure:"type" validate:"oneof=openai_compatible anthropic ollama"`
-	BaseURL     string `mapstructure:"base_url"`
-	Model       string `mapstructure:"model" validate:"required"`
-	VisionModel string `mapstructure:"vision_model"`
-	APIKeyEnv   string `mapstructure:"api_key_env"`
+	Name           string  `mapstructure:"name" validate:"required"`
+	Type           string  `mapstructure:"type" validate:"oneof=openai_compatible anthropic ollama"`
+	BaseURL        string  `mapstructure:"base_url"`
+	Model          string  `mapstructure:"model" validate:"required"`
+	VisionModel    string  `mapstructure:"vision_model"`
+	APIKeyEnv      string  `mapstructure:"api_key_env"`
+	InputUSDPer1K  float64 `mapstructure:"input_usd_per_1k"`
+	OutputUSDPer1K float64 `mapstructure:"output_usd_per_1k"`
 }
 
 type Budget struct {

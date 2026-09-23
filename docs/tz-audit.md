@@ -12,7 +12,7 @@ customer pilot.
 | Web/API/text/EML/MSG/image/PDF/Telegram inputs | Shared parser and analyzer paths; bounded uploads; Telegram polling | `go test ./...`, `scripts/ui_smoke.py`, parser tests | Implemented locally |
 | 60+ deterministic signals | 60 registered checks, localized explanations, weights, docs parity | `internal/signals/all`, `docs/signals`, CI tests | Implemented and CI-checked |
 | 100+ brands, domain/keyword/logo/color matching | 100+ YAML brands; pHash and palette matching; custom brands | `internal/brands`, `internal/store/brands_test.go`, migration 0005 | Implemented locally; visual data quality remains a data gate |
-| LLM explanation and vision OCR | OpenAI-compatible, Anthropic, Ollama adapters; redaction, schema validation, cache; vision is advisory | LLM unit tests and offline path | Implemented; live provider/model remains external |
+| LLM explanation and vision OCR | OpenAI-compatible, Anthropic, Ollama adapters; redaction, schema validation, cache, hourly call and priced daily USD budgets; vision is advisory | LLM unit tests and offline path | Implemented; live provider/model and current price-sheet configuration remain external |
 | Score and hard rules | Weighted signals, thresholds, allow/block lists, technical rules cannot be overridden by LLM clean | score and analyzer tests | Implemented locally |
 | Queue, campaigns, review actions, reports, IOC/STIX/MISP, awareness | API/UI/store/report/notification paths are present | HTTP/API, report, review, and integration tests | Implemented locally |
 | IMAP, Graph, Outlook/Gmail add-ins | Bounded receivers and static add-in bundles | package tests and static inspection | Code implemented; live host validation remains external |

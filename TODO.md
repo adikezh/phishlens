@@ -128,6 +128,9 @@ that require external accounts, providers, or deployment-specific decisions.
 - `GET /v1/privacy/export?subject=...` provides an org-scoped, audited subject
   export; Community exports metadata only, while explicitly enabled Business
   storage can return the decrypted message to an authorized admin.
+- LLM `calls_per_hour` and `usd_per_day` budgets are enforced in-process;
+  provider-specific USD-per-1K input/output prices are configured explicitly,
+  while zero-priced local providers are counted only against the call cap.
 
 ## Community v1 gates still to close
 
