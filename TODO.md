@@ -143,6 +143,8 @@ that require external accounts, providers, or deployment-specific decisions.
   real-world accuracy claim. The source review and import requirements are
   documented in `docs/corpus-provenance.md`; raw external messages remain
   intentionally unvendored until licensing is confirmed.
+- [x] Add a reproducible pilot FP/FN report and weight-calibration runbook;
+  real submissions, analyst approval, and the two-week pilot remain external.
 - [x] Black-box API/UI E2E script against a started server covers persistence,
   retrieval, user-vs-admin queue RBAC, deletion, and browser-visible admin key
   loading. Verified locally on 2026-09-23 with `python scripts/ui_smoke.py
