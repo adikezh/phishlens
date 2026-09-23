@@ -24,6 +24,8 @@ that require external accounts, providers, or deployment-specific decisions.
   from privacy-safe aggregate statistics.
 - Helm chart renders and lints with PVC-backed SQLite, probes, resource limits,
   non-root/read-only security controls, and optional existingSecret/Ingress.
+- Direct HTTPS is supported by `server.tls.cert` + `server.tls.key`, with
+  configuration validation preventing one-sided TLS settings.
 - Analyst API actions now support campaign grouping, blocklisting a domain from
   a submission, and local incident escalation with audit records.
 - `phishlens weights tune` now calibrates bounded signal weights from analyst

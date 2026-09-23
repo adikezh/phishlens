@@ -55,8 +55,17 @@ func newServeCmd() *cobra.Command {
 			}
 			errCh := make(chan error, 1)
 			go func() {
-				a.Log.Info().Str("listen", a.Cfg.Server.Listen).Str("base_url", a.Cfg.Server.BaseURL).Msg("http server started")
-				errCh <- srv.ListenAndServe() // TODO: TLS (server.tls.cert/key) or terminate at the ingress
+				protocol := "http"
+				var err error
+				if a.Cfg.Server.TLS.CertFile != "" {
+					protocol = "https"
+					a.Log.Info().Str("listen", a.Cfg.Server.Listen).Str("base_url", a.Cfg.Server.BaseURL).Str("protocol", protocol).Msg("http server started")
+					err = srv.ListenAndServeTLS(a.Cfg.Server.TLS.CertFile, a.Cfg.Server.TLS.KeyFile)
+				} else {
+					a.Log.Info().Str("listen", a.Cfg.Server.Listen).Str("base_url", a.Cfg.Server.BaseURL).Str("protocol", protocol).Msg("http server started")
+					err = srv.ListenAndServe()
+				}
+				errCh <- err
 			}()
 			select {
 			case err := <-errCh:

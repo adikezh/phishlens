@@ -23,4 +23,7 @@ deploy/systemd/phishlens.service; секреты — в /etc/phishlens/env (OPEN
 Ключи API/провайдеров — по именам из `*_env` полей конфига.
 
 ## Helm / Kubernetes
-TODO — см. deploy/helm/README.md.
+Для прямого HTTPS задайте `server.tls.cert` и `server.tls.key` одновременно;
+сервер запустит `ListenAndServeTLS`. Если поля пусты, используется HTTP — это
+подходит для локальной разработки или TLS-терминации на ingress. Helm-пример и
+секреты сертификата описаны в `deploy/helm/README.md`.

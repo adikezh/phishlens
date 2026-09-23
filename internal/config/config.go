@@ -34,6 +34,13 @@ type Server struct {
 	BaseURL      string  `mapstructure:"base_url"`
 	MaxUploadMB  int     `mapstructure:"max_upload_mb" validate:"min=1,max=200"`
 	RateLimitRPS float64 `mapstructure:"rate_limit_rps" validate:"min=0"`
+	TLS          TLS     `mapstructure:"tls"`
+}
+
+// TLS enables HTTPS when both certificate and key files are configured.
+type TLS struct {
+	CertFile string `mapstructure:"cert"`
+	KeyFile  string `mapstructure:"key"`
 }
 
 type Storage struct {
@@ -276,6 +283,9 @@ func (c *Config) Validate() error {
 	}
 	if _, err := c.Storage.Retention.SubmissionsDuration(); err != nil {
 		return fmt.Errorf("config: storage.retention.submissions: %w", err)
+	}
+	if (c.Server.TLS.CertFile == "") != (c.Server.TLS.KeyFile == "") {
+		return errors.New("config: server.tls.cert and server.tls.key must be configured together")
 	}
 	return nil
 }

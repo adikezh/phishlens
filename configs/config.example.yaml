@@ -7,6 +7,9 @@ server:
   base_url: "http://localhost:8082"
   max_upload_mb: 25
   rate_limit_rps: 5          # на ключ / IP; burst = rps*4
+  tls:
+    cert: ""                 # оба поля обязательны для HTTPS
+    key: ""
 
 storage:
   driver: sqlite             # sqlite | postgres
