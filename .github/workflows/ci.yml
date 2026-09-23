@@ -7,6 +7,21 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: phishlens_test
+          POSTGRES_DB: phishlens
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d phishlens"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PHISHLENS_POSTGRES_DSN: postgres://postgres:phishlens_test@localhost:5432/phishlens?sslmode=disable
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

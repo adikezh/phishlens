@@ -9,7 +9,7 @@ server:
   rate_limit_rps: 5          # на ключ / IP; burst = rps*4
 
 storage:
-  driver: sqlite             # sqlite | postgres (TODO)
+  driver: sqlite             # sqlite | postgres
   dsn: "file:data/phishlens.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
   store_bodies: false        # Community default: тела писем не хранятся
   encryption_key_env: PL_ENC_KEY

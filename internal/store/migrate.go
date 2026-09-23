@@ -16,7 +16,7 @@ import (
 // applyMigrations runs embedded NNNN_name.up.sql files newer than the recorded
 // version inside transactions. Compatible with golang-migrate file naming so the
 // tool can replace this runner later.
-func applyMigrations(ctx context.Context, db *sql.DB) error {
+func applyMigrations(ctx context.Context, db *sql.DB, postgres bool) error {
 	if _, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)`); err != nil {
 		return fmt.Errorf("migrate: init: %w", err)
 	}
@@ -41,6 +41,9 @@ func applyMigrations(ctx context.Context, db *sql.DB) error {
 		if err != nil {
 			return err
 		}
+		if postgres {
+			body = postgresMigration(body)
+		}
 		tx, err := db.BeginTx(ctx, nil)
 		if err != nil {
 			return err
@@ -49,7 +52,11 @@ func applyMigrations(ctx context.Context, db *sql.DB) error {
 			_ = tx.Rollback()
 			return fmt.Errorf("migrate: %s: %w", name, err)
 		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)`, version, time.Now().UTC().Format(time.RFC3339)); err != nil {
+		migrationInsert := `INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)`
+		if postgres {
+			migrationInsert = `INSERT INTO schema_migrations (version, applied_at) VALUES ($1, $2)`
+		}
+		if _, err := tx.ExecContext(ctx, migrationInsert, version, time.Now().UTC().Format(time.RFC3339)); err != nil {
 			_ = tx.Rollback()
 			return err
 		}
@@ -60,6 +67,15 @@ func applyMigrations(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
+// postgresMigration converts the intentionally portable schema into the two
+// PostgreSQL-specific DDL forms used by the embedded migrations. Runtime
+// queries stay portable and use the SQLStore placeholder adapter.
+func postgresMigration(body []byte) []byte {
+	s := string(body)
+	s = strings.ReplaceAll(s, "INTEGER PRIMARY KEY AUTOINCREMENT", "BIGSERIAL PRIMARY KEY")
+	return []byte(s)
+}
+
 // MigrationVersion returns the current schema version.
 func MigrationVersion(ctx context.Context, db *sql.DB) (int, error) {
 	var v int
@@ -68,7 +84,7 @@ func MigrationVersion(ctx context.Context, db *sql.DB) (int, error) {
 }
 
 // migrateDown reverts the latest migration using its .down.sql.
-func migrateDown(ctx context.Context, db *sql.DB) error {
+func migrateDown(ctx context.Context, db *sql.DB, postgres bool) error {
 	current, err := MigrationVersion(ctx, db)
 	if err != nil || current == 0 {
 		return err
@@ -89,7 +105,11 @@ func migrateDown(ctx context.Context, db *sql.DB) error {
 		_ = tx.Rollback()
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM schema_migrations WHERE version = ?`, current); err != nil {
+	deleteMigration := `DELETE FROM schema_migrations WHERE version = ?`
+	if postgres {
+		deleteMigration = `DELETE FROM schema_migrations WHERE version = $1`
+	}
+	if _, err := tx.ExecContext(ctx, deleteMigration, current); err != nil {
 		_ = tx.Rollback()
 		return err
 	}

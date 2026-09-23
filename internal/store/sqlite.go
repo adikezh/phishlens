@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,8 +22,9 @@ import (
 
 // SQLite is the modernc.org/sqlite implementation.
 type SQLite struct {
-	db     *sql.DB
-	cipher crypto.Cipher // nil → bodies stored as plaintext JSON (only when store_bodies=true)
+	db       *sql.DB
+	postgres bool
+	cipher   crypto.Cipher // nil → bodies stored as plaintext JSON (only when store_bodies=true)
 }
 
 func openSQLite(dsn string) (*SQLite, error) {
@@ -56,13 +58,46 @@ func (s *SQLite) SetCipher(c crypto.Cipher) { s.cipher = c }
 func (s *SQLite) DB() *sql.DB { return s.db }
 
 // Migrate applies embedded migrations.
-func (s *SQLite) Migrate(ctx context.Context) error { return applyMigrations(ctx, s.db) }
+func (s *SQLite) Migrate(ctx context.Context) error { return applyMigrations(ctx, s.db, s.postgres) }
 
 // MigrateDown reverts the latest migration.
-func (s *SQLite) MigrateDown(ctx context.Context) error { return migrateDown(ctx, s.db) }
+func (s *SQLite) MigrateDown(ctx context.Context) error { return migrateDown(ctx, s.db, s.postgres) }
 
 // Close closes the database.
 func (s *SQLite) Close() error { return s.db.Close() }
+
+// sql rewrites the portable '?' placeholder syntax for PostgreSQL. SQLite and
+// PostgreSQL share the same Store contract; keeping the query text portable
+// makes migrations and behavioral tests easier to compare.
+func (s *SQLite) sql(query string) string {
+	if !s.postgres {
+		return query
+	}
+	var b strings.Builder
+	n := 0
+	for _, r := range query {
+		if r == '?' {
+			n++
+			b.WriteByte('$')
+			b.WriteString(strconv.Itoa(n))
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+func (s *SQLite) execContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	return s.db.ExecContext(ctx, s.sql(query), args...)
+}
+
+func (s *SQLite) queryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	return s.db.QueryContext(ctx, s.sql(query), args...)
+}
+
+func (s *SQLite) queryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
+	return s.db.QueryRowContext(ctx, s.sql(query), args...)
+}
 
 func ts(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }
 
@@ -105,35 +140,40 @@ func (s *SQLite) SaveSubmission(ctx context.Context, sub *domain.Submission, sto
 		}
 	}
 	now := ts(time.Now())
-	_, err = tx.ExecContext(ctx, `INSERT INTO submissions
+	_, err = tx.ExecContext(ctx, s.sql(`INSERT INTO submissions
 		(id, org_id, channel, submitted_by, kind, received_at, status, reviewed_by, from_domain, subject, message_json, campaign_key, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(id) DO UPDATE SET status=excluded.status, reviewed_by=excluded.reviewed_by`,
+		ON CONFLICT(id) DO UPDATE SET status=excluded.status, reviewed_by=excluded.reviewed_by`),
 		sub.ID, sub.OrgID, string(sub.Channel), sub.SubmittedBy, string(sub.Kind), ts(sub.ReceivedAt),
 		string(sub.Status), sub.ReviewedBy, fromDomain, subject, message, campaignKey(sub), now)
 	if err != nil {
 		return fmt.Errorf("store: insert submission: %w", err)
 	}
-	if _, err = tx.ExecContext(ctx, `DELETE FROM submission_iocs WHERE submission_id = ?`, sub.ID); err != nil {
+	if _, err = tx.ExecContext(ctx, s.sql(`DELETE FROM submission_iocs WHERE submission_id = ?`), sub.ID); err != nil {
 		return err
 	}
 	for _, ioc := range submissionIOCs(sub) {
-		if _, err = tx.ExecContext(ctx, `INSERT OR IGNORE INTO submission_iocs
-			(submission_id, org_id, kind, value, created_at) VALUES (?, ?, ?, ?, ?)`,
+		if _, err = tx.ExecContext(ctx, s.sql(`INSERT INTO submission_iocs
+			(submission_id, org_id, kind, value, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`),
 			sub.ID, sub.OrgID, ioc.Kind, ioc.Value, now); err != nil {
 			return fmt.Errorf("store: insert ioc: %w", err)
 		}
 	}
 	if a := sub.Result; a != nil {
-		_, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO analyses
+		_, err = tx.ExecContext(ctx, s.sql(`INSERT INTO analyses
 			(submission_id, score, verdict, confidence, attack_type, brand_json, llm_json, recommendations_json, warnings_json, duration_ms)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT (submission_id) DO UPDATE SET
+			 score = excluded.score, verdict = excluded.verdict, confidence = excluded.confidence,
+			 attack_type = excluded.attack_type, brand_json = excluded.brand_json, llm_json = excluded.llm_json,
+			 recommendations_json = excluded.recommendations_json, warnings_json = excluded.warnings_json,
+			 duration_ms = excluded.duration_ms`),
 			sub.ID, a.Score, string(a.Verdict), a.Confidence, string(a.AttackType),
 			toJSON(a.Brand), toJSON(a.LLM), toJSON(a.Recommendations), toJSON(a.Warnings), a.DurationMs)
 		if err != nil {
 			return fmt.Errorf("store: insert analysis: %w", err)
 		}
-		if _, err = tx.ExecContext(ctx, `DELETE FROM signals WHERE submission_id = ?`, sub.ID); err != nil {
+		if _, err = tx.ExecContext(ctx, s.sql(`DELETE FROM signals WHERE submission_id = ?`), sub.ID); err != nil {
 			return err
 		}
 		for _, sg := range a.Signals {
@@ -141,9 +181,9 @@ func (s *SQLite) SaveSubmission(ctx context.Context, sub *domain.Submission, sto
 			if !storeBodies {
 				evidence = "" // Community: no fragments of the message are persisted
 			}
-			if _, err = tx.ExecContext(ctx, `INSERT INTO signals
+			if _, err = tx.ExecContext(ctx, s.sql(`INSERT INTO signals
 				(submission_id, signal_id, category, weight, confidence, evidence, explanation, source)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?)`),
 				sub.ID, sg.ID, string(sg.Category), sg.Weight, sg.Confidence, evidence, sg.Explanation, string(sg.Source)); err != nil {
 				return fmt.Errorf("store: insert signal: %w", err)
 			}
@@ -233,7 +273,7 @@ func submissionIOCs(sub *domain.Submission) []IOC {
 
 // ListIOCs returns indicators from confirmed phishing submissions only.
 func (s *SQLite) ListIOCs(ctx context.Context, orgID string, since time.Time) ([]IOC, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT i.org_id, i.submission_id, i.kind, i.value, i.created_at
+	rows, err := s.queryContext(ctx, `SELECT i.org_id, i.submission_id, i.kind, i.value, i.created_at
 		FROM submission_iocs i JOIN submissions s ON s.id = i.submission_id
 		WHERE s.status = ? AND s.received_at >= ? AND (s.org_id = ? OR ? = '')
 		ORDER BY i.created_at ASC, i.kind, i.value`, string(domain.StatusConfirmedPhish), ts(since), orgID, orgID)
@@ -299,7 +339,7 @@ func (s *SQLite) scanSubmission(ctx context.Context, row interface{ Scan(...any)
 		if wr.Valid {
 			_ = json.Unmarshal([]byte(wr.String), &a.Warnings)
 		}
-		rows, err := s.db.QueryContext(ctx, `SELECT signal_id, category, weight, confidence, evidence, explanation, source FROM signals WHERE submission_id = ? ORDER BY ABS(weight*confidence) DESC`, sub.ID)
+		rows, err := s.queryContext(ctx, `SELECT signal_id, category, weight, confidence, evidence, explanation, source FROM signals WHERE submission_id = ? ORDER BY ABS(weight*confidence) DESC`, sub.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -320,7 +360,7 @@ func (s *SQLite) scanSubmission(ctx context.Context, row interface{ Scan(...any)
 
 // GetSubmission loads one submission with its analysis and signals.
 func (s *SQLite) GetSubmission(ctx context.Context, id string) (*domain.Submission, error) {
-	return s.scanSubmission(ctx, s.db.QueryRowContext(ctx, selectSubmission+` WHERE s.id = ?`, id))
+	return s.scanSubmission(ctx, s.queryRowContext(ctx, selectSubmission+` WHERE s.id = ?`, id))
 }
 
 // ListSubmissions returns newest first.
@@ -349,7 +389,7 @@ func (s *SQLite) ListSubmissions(ctx context.Context, f SubmissionFilter) ([]*do
 	}
 	q += ` ORDER BY s.received_at DESC LIMIT ? OFFSET ?`
 	args = append(args, limit, f.Offset)
-	rows, err := s.db.QueryContext(ctx, q, args...)
+	rows, err := s.queryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +419,7 @@ func (s *SQLite) ListSubmissions(ctx context.Context, f SubmissionFilter) ([]*do
 
 // UpdateSubmissionStatus changes review status (F-4.6.2).
 func (s *SQLite) UpdateSubmissionStatus(ctx context.Context, id string, status domain.Status, reviewedBy string) error {
-	res, err := s.db.ExecContext(ctx, `UPDATE submissions SET status = ?, reviewed_by = ? WHERE id = ?`, string(status), reviewedBy, id)
+	res, err := s.execContext(ctx, `UPDATE submissions SET status = ?, reviewed_by = ? WHERE id = ?`, string(status), reviewedBy, id)
 	if err != nil {
 		return err
 	}
@@ -392,11 +432,11 @@ func (s *SQLite) UpdateSubmissionStatus(ctx context.Context, id string, status d
 // DeleteSubmission removes a submission and its children (privacy: DELETE /v1/submissions/{id}).
 func (s *SQLite) DeleteSubmission(ctx context.Context, id string) error {
 	for _, q := range []string{`DELETE FROM signals WHERE submission_id = ?`, `DELETE FROM analyses WHERE submission_id = ?`} {
-		if _, err := s.db.ExecContext(ctx, q, id); err != nil {
+		if _, err := s.execContext(ctx, q, id); err != nil {
 			return err
 		}
 	}
-	res, err := s.db.ExecContext(ctx, `DELETE FROM submissions WHERE id = ?`, id)
+	res, err := s.execContext(ctx, `DELETE FROM submissions WHERE id = ?`, id)
 	if err != nil {
 		return err
 	}
@@ -409,16 +449,16 @@ func (s *SQLite) DeleteSubmission(ctx context.Context, id string) error {
 // PurgeOlderThan enforces retention.
 func (s *SQLite) PurgeOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
 	c := ts(cutoff)
-	if _, err := s.db.ExecContext(ctx, `DELETE FROM submission_iocs WHERE submission_id IN (SELECT id FROM submissions WHERE received_at < ?)`, c); err != nil {
+	if _, err := s.execContext(ctx, `DELETE FROM submission_iocs WHERE submission_id IN (SELECT id FROM submissions WHERE received_at < ?)`, c); err != nil {
 		return 0, err
 	}
-	if _, err := s.db.ExecContext(ctx, `DELETE FROM signals WHERE submission_id IN (SELECT id FROM submissions WHERE received_at < ?)`, c); err != nil {
+	if _, err := s.execContext(ctx, `DELETE FROM signals WHERE submission_id IN (SELECT id FROM submissions WHERE received_at < ?)`, c); err != nil {
 		return 0, err
 	}
-	if _, err := s.db.ExecContext(ctx, `DELETE FROM analyses WHERE submission_id IN (SELECT id FROM submissions WHERE received_at < ?)`, c); err != nil {
+	if _, err := s.execContext(ctx, `DELETE FROM analyses WHERE submission_id IN (SELECT id FROM submissions WHERE received_at < ?)`, c); err != nil {
 		return 0, err
 	}
-	res, err := s.db.ExecContext(ctx, `DELETE FROM submissions WHERE received_at < ?`, c)
+	res, err := s.execContext(ctx, `DELETE FROM submissions WHERE received_at < ?`, c)
 	if err != nil {
 		return 0, err
 	}
@@ -434,7 +474,7 @@ func listTable(kind ListKind) string {
 
 // ListEntries returns entries for an org (” = global).
 func (s *SQLite) ListEntries(ctx context.Context, orgID string, kind ListKind) ([]ListEntry, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT org_id, value, note, created_by, created_at FROM `+listTable(kind)+` WHERE org_id = ? OR org_id = '' ORDER BY value`, orgID)
+	rows, err := s.queryContext(ctx, `SELECT org_id, value, note, created_by, created_at FROM `+listTable(kind)+` WHERE org_id = ? OR org_id = '' ORDER BY value`, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -454,14 +494,14 @@ func (s *SQLite) ListEntries(ctx context.Context, orgID string, kind ListKind) (
 
 // AddEntry inserts or ignores a list entry.
 func (s *SQLite) AddEntry(ctx context.Context, e ListEntry) error {
-	_, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO `+listTable(e.Kind)+` (org_id, value, note, created_by, created_at) VALUES (?, ?, ?, ?, ?)`,
+	_, err := s.execContext(ctx, `INSERT INTO `+listTable(e.Kind)+` (org_id, value, note, created_by, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
 		e.OrgID, strings.ToLower(strings.TrimSpace(e.Value)), e.Note, e.CreatedBy, ts(time.Now()))
 	return err
 }
 
 // RemoveEntry deletes a list entry.
 func (s *SQLite) RemoveEntry(ctx context.Context, orgID string, kind ListKind, value string) error {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM `+listTable(kind)+` WHERE org_id = ? AND value = ?`, orgID, strings.ToLower(value))
+	res, err := s.execContext(ctx, `DELETE FROM `+listTable(kind)+` WHERE org_id = ? AND value = ?`, orgID, strings.ToLower(value))
 	if err != nil {
 		return err
 	}
@@ -473,7 +513,7 @@ func (s *SQLite) RemoveEntry(ctx context.Context, orgID string, kind ListKind, v
 
 // ListBrands returns custom brands for an org (F-4.3.4).
 func (s *SQLite) ListBrands(ctx context.Context, orgID string) ([]brands.Brand, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT org_id, name, domains, esp_domains, keywords, locale FROM brands WHERE org_id = ? OR org_id = '' ORDER BY name`, orgID)
+	rows, err := s.queryContext(ctx, `SELECT org_id, name, domains, esp_domains, keywords, locale FROM brands WHERE org_id = ? OR org_id = '' ORDER BY name`, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -498,7 +538,7 @@ func (s *SQLite) AddBrand(ctx context.Context, b brands.Brand) error {
 	d, _ := json.Marshal(b.Domains)
 	e, _ := json.Marshal(b.ESPDomains)
 	k, _ := json.Marshal(b.Keywords)
-	_, err := s.db.ExecContext(ctx, `INSERT INTO brands (org_id, name, domains, esp_domains, keywords, locale, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+	_, err := s.execContext(ctx, `INSERT INTO brands (org_id, name, domains, esp_domains, keywords, locale, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(org_id, name) DO UPDATE SET domains=excluded.domains, esp_domains=excluded.esp_domains, keywords=excluded.keywords, locale=excluded.locale`,
 		b.OrgID, b.Name, string(d), string(e), string(k), b.Locale, ts(time.Now()))
 	return err
@@ -506,7 +546,7 @@ func (s *SQLite) AddBrand(ctx context.Context, b brands.Brand) error {
 
 // CreateAPIKey stores a hashed key.
 func (s *SQLite) CreateAPIKey(ctx context.Context, k APIKey) error {
-	_, err := s.db.ExecContext(ctx, `INSERT INTO api_keys (id, org_id, name, role, key_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+	_, err := s.execContext(ctx, `INSERT INTO api_keys (id, org_id, name, role, key_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
 		k.ID, k.OrgID, k.Name, k.Role, k.KeyHash, ts(k.CreatedAt))
 	return err
 }
@@ -516,7 +556,7 @@ func (s *SQLite) GetAPIKeyByHash(ctx context.Context, hash string) (*APIKey, err
 	var k APIKey
 	var created string
 	var lastUsed, revoked sql.NullString
-	err := s.db.QueryRowContext(ctx, `SELECT id, org_id, name, role, key_hash, created_at, last_used_at, revoked_at FROM api_keys WHERE key_hash = ?`, hash).
+	err := s.queryRowContext(ctx, `SELECT id, org_id, name, role, key_hash, created_at, last_used_at, revoked_at FROM api_keys WHERE key_hash = ?`, hash).
 		Scan(&k.ID, &k.OrgID, &k.Name, &k.Role, &k.KeyHash, &created, &lastUsed, &revoked)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -533,13 +573,13 @@ func (s *SQLite) GetAPIKeyByHash(ctx context.Context, hash string) (*APIKey, err
 		t := parseTS(lastUsed.String)
 		k.LastUsedAt = &t
 	}
-	_, _ = s.db.ExecContext(ctx, `UPDATE api_keys SET last_used_at = ? WHERE id = ?`, ts(time.Now()), k.ID)
+	_, _ = s.execContext(ctx, `UPDATE api_keys SET last_used_at = ? WHERE id = ?`, ts(time.Now()), k.ID)
 	return &k, nil
 }
 
 // ListAPIKeys lists keys for an org.
 func (s *SQLite) ListAPIKeys(ctx context.Context, orgID string) ([]APIKey, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id, org_id, name, role, created_at, last_used_at, revoked_at FROM api_keys WHERE org_id = ? OR ? = '' ORDER BY created_at DESC`, orgID, orgID)
+	rows, err := s.queryContext(ctx, `SELECT id, org_id, name, role, created_at, last_used_at, revoked_at FROM api_keys WHERE org_id = ? OR ? = '' ORDER BY created_at DESC`, orgID, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -568,7 +608,7 @@ func (s *SQLite) ListAPIKeys(ctx context.Context, orgID string) ([]APIKey, error
 
 // RevokeAPIKey marks a key revoked.
 func (s *SQLite) RevokeAPIKey(ctx context.Context, id string) error {
-	res, err := s.db.ExecContext(ctx, `UPDATE api_keys SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL`, ts(time.Now()), id)
+	res, err := s.execContext(ctx, `UPDATE api_keys SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL`, ts(time.Now()), id)
 	if err != nil {
 		return err
 	}
@@ -584,7 +624,7 @@ func (s *SQLite) Stats(ctx context.Context, orgID string, since time.Time) (*Sta
 	where := ` WHERE s.received_at >= ? AND (s.org_id = ? OR ? = '')`
 	args := []any{ts(since), orgID, orgID}
 	group := func(q string, into map[string]int) error {
-		rows, err := s.db.QueryContext(ctx, q, args...)
+		rows, err := s.queryContext(ctx, q, args...)
 		if err != nil {
 			return err
 		}
@@ -612,11 +652,11 @@ func (s *SQLite) Stats(ctx context.Context, orgID string, since time.Time) (*Sta
 		st.Total += n
 	}
 	var avg sql.NullFloat64
-	if err := s.db.QueryRowContext(ctx, `SELECT AVG(a.duration_ms) FROM submissions s JOIN analyses a ON a.submission_id = s.id`+where, args...).Scan(&avg); err == nil {
+	if err := s.queryRowContext(ctx, `SELECT AVG(a.duration_ms) FROM submissions s JOIN analyses a ON a.submission_id = s.id`+where, args...).Scan(&avg); err == nil {
 		st.AvgDuration = int(avg.Float64)
 	}
 	top := func(q string) ([]NameCount, error) {
-		rows, err := s.db.QueryContext(ctx, q, args...)
+		rows, err := s.queryContext(ctx, q, args...)
 		if err != nil {
 			return nil, err
 		}
@@ -640,7 +680,11 @@ func (s *SQLite) Stats(ctx context.Context, orgID string, since time.Time) (*Sta
 	if st.TopSignals, err = top(`SELECT g.signal_id, COUNT(*) c FROM signals g JOIN submissions s ON s.id = g.submission_id` + where + ` GROUP BY g.signal_id ORDER BY c DESC LIMIT 10`); err != nil {
 		return nil, err
 	}
-	if st.TopBrands, err = top(`SELECT json_extract(a.brand_json, '$.name'), COUNT(*) c FROM submissions s JOIN analyses a ON a.submission_id = s.id` + where + ` AND a.brand_json IS NOT NULL GROUP BY 1 ORDER BY c DESC LIMIT 10`); err != nil {
+	brandName := `json_extract(a.brand_json, '$.name')`
+	if s.postgres {
+		brandName = `a.brand_json::jsonb ->> 'name'`
+	}
+	if st.TopBrands, err = top(`SELECT ` + brandName + `, COUNT(*) c FROM submissions s JOIN analyses a ON a.submission_id = s.id` + where + ` AND a.brand_json IS NOT NULL GROUP BY 1 ORDER BY c DESC LIMIT 10`); err != nil {
 		return nil, err
 	}
 	return st, nil
@@ -648,7 +692,7 @@ func (s *SQLite) Stats(ctx context.Context, orgID string, since time.Time) (*Sta
 
 // Audit appends an audit row.
 func (s *SQLite) Audit(ctx context.Context, e AuditEntry) error {
-	_, err := s.db.ExecContext(ctx, `INSERT INTO audit (org_id, actor, action, target, details, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+	_, err := s.execContext(ctx, `INSERT INTO audit (org_id, actor, action, target, details, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
 		e.OrgID, e.Actor, e.Action, e.Target, e.Details, ts(time.Now()))
 	return err
 }

@@ -41,7 +41,7 @@ internal/brands       brands.yaml, matcher (домен / ключевые сло
 internal/reputation   DNSBL, RDAP, OpenPhish, optional authenticated URLhaus
 internal/llm          провайдеры (openai_compatible, anthropic, ollama), редакция PII, схема
 internal/score        веса, пороги, жёсткие правила, вердикт
-internal/store        SQLite (modernc) / Postgres (TODO), миграции
+internal/store        SQLite (modernc) / PostgreSQL (pgx), миграции
 internal/httpapi      REST /v1/* (chi), /health, /metrics
 internal/web          UI (html/template + htmx; миграция на templ — TODO)
 internal/notify       webhook (HMAC), Wazuh, TheHive (заглушки)
@@ -61,7 +61,7 @@ docs/signals/         документация каждого сигнала
 
 PDF/OCR/vision без отдельного backend, собственная проверка
 SPF/DKIM/DMARC по DNS, RDAP/TI-источники, sandbox (chromedp), IMAP/Graph/Telegram,
-OIDC, Postgres и hosted add-in validation. Они явно возвращают ошибку или
+OIDC и hosted add-in validation. Они явно возвращают ошибку или
 degraded warning и не маскируются под успешный анализ. См. [TODO.md](TODO.md).
 
 ## Лицензия

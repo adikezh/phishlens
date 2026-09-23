@@ -1,7 +1,7 @@
 // Package store persists submissions, analyses, signals, lists, brands, API keys
-// and audit records (ТЗ §3). SQLite via modernc (no cgo); Postgres via pgx is
-// TODO. Queries are hand-written for the skeleton; sqlc generation is wired in
-// sqlc.yaml for later.
+// and audit records (ТЗ §3). SQLite via modernc (no cgo) and PostgreSQL via pgx
+// implement the same contract. Queries are hand-written; sqlc generation is
+// wired in sqlc.yaml for later.
 package store
 
 import (
@@ -18,7 +18,7 @@ import (
 var (
 	// ErrNotFound is returned for missing rows.
 	ErrNotFound = errors.New("store: not found")
-	// ErrNotImplemented marks the Postgres driver.
+	// ErrNotImplemented is retained for callers that used the old driver sentinel.
 	ErrNotImplemented = errors.New("store: not implemented")
 )
 
@@ -134,8 +134,7 @@ func Open(cfg config.Storage) (Store, error) {
 	case "sqlite":
 		return openSQLite(cfg.DSN)
 	case "postgres":
-		// TODO: pgx + golang-migrate postgres driver; same SQL apart from AUTOINCREMENT → GENERATED.
-		return nil, fmt.Errorf("%w: postgres driver", ErrNotImplemented)
+		return openPostgres(cfg.DSN)
 	default:
 		return nil, fmt.Errorf("store: unknown driver %q", cfg.Driver)
 	}

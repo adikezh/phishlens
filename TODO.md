@@ -27,6 +27,9 @@ that require external accounts, providers, or deployment-specific decisions.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
+- PostgreSQL storage is implemented through pgx with the same Store contract;
+  hosted CI runs migrations and CRUD/statistics integration tests against a
+  disposable PostgreSQL service.
 - Local `govulncheck ./...` reports no vulnerabilities in reachable code paths;
   one unrelated vulnerability remains in a required-but-unreachable module.
 
