@@ -31,7 +31,7 @@
 | `llm.Provider` | `internal/llm` | `OpenAICompatible`, `Anthropic` (official SDK), `Ollama` |
 | `parse.OCR` | `internal/parse` | `TesseractOCR` (HTTP к контейнеру), vision-LLM — TODO |
 | `store.Store` | `internal/store` | `SQLite` (modernc) and PostgreSQL (pgx), shared contract/migrations |
-| `notify.Notifier` | `internal/notify` | HMAC webhook (static and encrypted org subscriptions) and privacy-safe Wazuh HTTP delivery; TheHive remains a Business TODO |
+| `notify.Notifier` | `internal/notify` | HMAC webhook (static and encrypted org subscriptions), privacy-safe Wazuh HTTP delivery, and TheHive 5 alert API |
 | `ingest.Runner` | `internal/ingest` | imap / graph / telegram — TODO |
 
 ## Добавление сигнала

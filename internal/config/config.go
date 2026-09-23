@@ -205,10 +205,19 @@ type Webhook struct {
 	SecretEnv string `mapstructure:"secret_env"`
 }
 
+// TheHive is the TheHive 5 alert API configuration.
+type TheHive struct {
+	Enabled      bool   `mapstructure:"enabled"`
+	APIURL       string `mapstructure:"api_url"`
+	APIKeyEnv    string `mapstructure:"api_key_env"`
+	Organisation string `mapstructure:"organisation"`
+	MinVerdict   string `mapstructure:"min_verdict"`
+}
+
 type Integrations struct {
 	Wazuh   Wazuh   `mapstructure:"wazuh"`
 	Webhook Webhook `mapstructure:"webhook"`
-	TheHive Toggle  `mapstructure:"thehive"`
+	TheHive TheHive `mapstructure:"thehive"`
 }
 
 type OIDC struct {
@@ -362,6 +371,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("integrations.webhook.enabled", false)
 	v.SetDefault("integrations.webhook.secret_env", "WEBHOOK_SECRET")
 	v.SetDefault("integrations.thehive.enabled", false)
+	v.SetDefault("integrations.thehive.api_url", "")
+	v.SetDefault("integrations.thehive.api_key_env", "THEHIVE_API_KEY")
+	v.SetDefault("integrations.thehive.organisation", "")
+	v.SetDefault("integrations.thehive.min_verdict", "suspicious")
 
 	v.SetDefault("auth.anonymous_analyze", true)
 	v.SetDefault("auth.api_keys_enabled", true)

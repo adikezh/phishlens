@@ -50,6 +50,10 @@ that require external accounts, providers, or deployment-specific decisions.
   opening or executing macro streams.
 - C-04 compares detected message language with the configured brand locale;
   unknown language and machine-translation claims remain out of scope.
+- TheHive 5 notifier posts privacy-safe alerts with domains and attachment
+  hashes, bearer authentication, organisation routing, verdict thresholding,
+  bounded timeouts, and non-secret error handling. A live TheHive account is
+  still required for external verification.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
@@ -83,7 +87,8 @@ that require external accounts, providers, or deployment-specific decisions.
 - IMAP, Microsoft Graph, Telegram, Outlook/Gmail add-in host validation.
 - Configure and verify a real URLhaus Auth-Key; without it the provider is explicitly degraded to unknown.
 - Live Safe Browsing/AbuseIPDB/VirusTotal accounts and rate limits.
-- OIDC, multi-tenant production isolation, live TheHive/IRIS/Jira account integration.
+- OIDC, multi-tenant production isolation, live TheHive account verification,
+  and IRIS/Jira account integration.
 - Sandbox isolation and browser detonation evidence.
 - Pilot evidence: one organization, two weeks, at least 20 real submissions,
   measured false positives/negatives, and owner-approved weight changes.
