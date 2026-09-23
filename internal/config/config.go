@@ -164,12 +164,20 @@ type Sandbox struct {
 }
 
 type IMAP struct {
-	Enabled          bool   `mapstructure:"enabled"`
-	Host             string `mapstructure:"host"`
-	User             string `mapstructure:"user"`
-	PasswordEnv      string `mapstructure:"password_env"`
-	Folder           string `mapstructure:"folder"`
-	ReplyWithVerdict bool   `mapstructure:"reply_with_verdict"`
+	Enabled          bool          `mapstructure:"enabled"`
+	Host             string        `mapstructure:"host"`
+	User             string        `mapstructure:"user"`
+	PasswordEnv      string        `mapstructure:"password_env"`
+	Folder           string        `mapstructure:"folder"`
+	ProcessedFolder  string        `mapstructure:"processed_folder"`
+	OrgID            string        `mapstructure:"org_id"`
+	PollInterval     time.Duration `mapstructure:"poll_interval"`
+	ReplyWithVerdict bool          `mapstructure:"reply_with_verdict"`
+	SMTPHost         string        `mapstructure:"smtp_host"`
+	SMTPPort         int           `mapstructure:"smtp_port"`
+	SMTPUser         string        `mapstructure:"smtp_user"`
+	SMTPPasswordEnv  string        `mapstructure:"smtp_password_env"`
+	SMTPFrom         string        `mapstructure:"smtp_from"`
 }
 
 type Graph struct {
@@ -376,7 +384,11 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("ingest.imap.enabled", false)
 	v.SetDefault("ingest.imap.folder", "INBOX")
 	v.SetDefault("ingest.imap.password_env", "IMAP_PASS")
+	v.SetDefault("ingest.imap.processed_folder", "Processed")
+	v.SetDefault("ingest.imap.poll_interval", "30s")
 	v.SetDefault("ingest.imap.reply_with_verdict", true)
+	v.SetDefault("ingest.imap.smtp_port", 587)
+	v.SetDefault("ingest.imap.smtp_password_env", "SMTP_PASS")
 	v.SetDefault("ingest.graph.enabled", false)
 	v.SetDefault("ingest.graph.client_secret_env", "GRAPH_SECRET")
 	v.SetDefault("ingest.telegram.enabled", false)

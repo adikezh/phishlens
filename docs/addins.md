@@ -19,3 +19,9 @@ addins/gmail/Code.gs + appsscript.json: Apps Script add-on, Script Properties PH
 ## Telegram (F-4.1.8)
 `internal/ingest/telegram` реализует Bot API long polling, привязку чата к
 организации по `/start <код>`, текст/скриншот → общий analyzer → verdict.
+
+## IMAP (F-4.1.4)
+`internal/ingest/imap` uses IMAPS polling for `UNSEEN` messages, bounds each
+message to 25 MiB, analyzes the complete `.eml`, marks successful messages as
+seen and can move them to `processed_folder`. SMTP verdict replies require
+explicit `smtp_host`, `smtp_from` and optional authentication settings.

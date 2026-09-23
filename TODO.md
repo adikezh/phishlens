@@ -69,6 +69,10 @@ that require external accounts, providers, or deployment-specific decisions.
   operator-entered API key without shipping a credential, polls `202` results,
   and declares a VersionOverrides ribbon command. Sideloading in a real M365
   tenant and HTTPS/manifest validation remain external gates.
+- IMAP receiver now polls IMAPS for unseen messages with a 25 MiB bound, sends
+  `.eml` through the shared analyzer, marks only successful messages as seen,
+  optionally moves them to `processed_folder`, and supports an explicit
+  privacy-safe SMTP verdict reply.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
@@ -99,9 +103,8 @@ that require external accounts, providers, or deployment-specific decisions.
 
 ## Business / external gates (not locally provable)
 
-- IMAP, Microsoft Graph, Gmail add-in host validation, and live
-  Outlook/M365 add-in host validation,
-  Telegram bot/token verification.
+- Microsoft Graph, Gmail add-in host validation, and live IMAP/Outlook/M365
+  provider/host validation, plus Telegram bot/token verification.
 - Configure and verify a real URLhaus Auth-Key; without it the provider is explicitly degraded to unknown.
 - Live Safe Browsing/AbuseIPDB/VirusTotal accounts and rate limits.
 - Live OIDC IdP/group/tenant verification, multi-tenant production isolation,

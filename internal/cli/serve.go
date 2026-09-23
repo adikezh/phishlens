@@ -16,6 +16,7 @@ import (
 	"github.com/phishlens/phishlens/internal/ingest/graph"
 	"github.com/phishlens/phishlens/internal/ingest/imap"
 	"github.com/phishlens/phishlens/internal/ingest/telegram"
+	"github.com/phishlens/phishlens/internal/notify"
 	"github.com/phishlens/phishlens/internal/web"
 )
 
@@ -42,7 +43,9 @@ func newServeCmd() *cobra.Command {
 			}
 
 			ingest.NewManager(a.Log,
-				imap.New(a.Cfg.Ingest.IMAP),
+				imap.New(a.Cfg.Ingest.IMAP, imap.AnalyzeFunc(analyze), imap.ReplyFunc(func(ctx context.Context, to string, sub *domain.Submission) error {
+					return notify.SendEmailReply(ctx, a.Cfg.Ingest.IMAP, to, sub)
+				})),
 				graph.New(a.Cfg.Ingest.Graph),
 				telegram.New(a.Cfg.Ingest.Telegram, analyze),
 			).Start(ctx)
