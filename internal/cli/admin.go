@@ -300,10 +300,10 @@ func newReportCmd() *cobra.Command {
 
 func newIOCCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "ioc", Short: "Экспорт IOC (STIX 2.1 / MISP)"}
-	var since, format string
+	var since, format, out string
 	export := &cobra.Command{
 		Use: "export",
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			d, err := config.ParseDuration(since)
 			if err != nil {
 				return err
@@ -313,12 +313,23 @@ func newIOCCmd() *cobra.Command {
 				return err
 			}
 			defer st.Close()
-			_, err = report.ExportIOC(context.Background(), st, time.Now().Add(-d), format)
-			return err
+			b, err := report.ExportIOC(context.Background(), st, time.Now().Add(-d), format)
+			if err != nil {
+				return err
+			}
+			if out == "" || out == "-" {
+				_, err = cmd.OutOrStdout().Write(b)
+				if err == nil {
+					_, err = cmd.OutOrStdout().Write([]byte("\n"))
+				}
+				return err
+			}
+			return os.WriteFile(out, b, 0o644)
 		},
 	}
 	export.Flags().StringVar(&since, "since", "30d", "период")
 	export.Flags().StringVar(&format, "format", "stix", "stix|misp")
+	export.Flags().StringVar(&out, "out", "-", "файл")
 	cmd.AddCommand(export)
 	return cmd
 }

@@ -80,6 +80,17 @@ type NameCount struct {
 	Count int    `json:"count"`
 }
 
+// IOC is privacy-safe indicator metadata retained independently of message
+// bodies, so Community mode can export confirmed indicators without storing
+// the submitted email.
+type IOC struct {
+	OrgID        string    `json:"org_id,omitempty"`
+	SubmissionID string    `json:"submission_id"`
+	Kind         string    `json:"kind"` // domain | url | sha256
+	Value        string    `json:"value"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 // AuditEntry records a privileged action.
 type AuditEntry struct {
 	OrgID   string
@@ -98,6 +109,7 @@ type Store interface {
 	UpdateSubmissionStatus(ctx context.Context, id string, status domain.Status, reviewedBy string) error
 	DeleteSubmission(ctx context.Context, id string) error
 	PurgeOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
+	ListIOCs(ctx context.Context, orgID string, since time.Time) ([]IOC, error)
 
 	ListEntries(ctx context.Context, orgID string, kind ListKind) ([]ListEntry, error)
 	AddEntry(ctx context.Context, e ListEntry) error

@@ -14,6 +14,8 @@ that require external accounts, providers, or deployment-specific decisions.
 - The HTTP service exposes `/health`, `/metrics`, `/v1/analyze`, analysis
   retrieval, API-key authentication, SQLite persistence, allow/block lists,
   brands, statistics, and analyst review status.
+- Confirmed phishing IOCs are retained without message bodies and export as
+  STIX 2.1 or MISP JSON through `phishlens ioc export`.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.

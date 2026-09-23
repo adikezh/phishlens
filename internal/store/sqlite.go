@@ -114,6 +114,16 @@ func (s *SQLite) SaveSubmission(ctx context.Context, sub *domain.Submission, sto
 	if err != nil {
 		return fmt.Errorf("store: insert submission: %w", err)
 	}
+	if _, err = tx.ExecContext(ctx, `DELETE FROM submission_iocs WHERE submission_id = ?`, sub.ID); err != nil {
+		return err
+	}
+	for _, ioc := range submissionIOCs(sub) {
+		if _, err = tx.ExecContext(ctx, `INSERT OR IGNORE INTO submission_iocs
+			(submission_id, org_id, kind, value, created_at) VALUES (?, ?, ?, ?, ?)`,
+			sub.ID, sub.OrgID, ioc.Kind, ioc.Value, now); err != nil {
+			return fmt.Errorf("store: insert ioc: %w", err)
+		}
+	}
 	if a := sub.Result; a != nil {
 		_, err = tx.ExecContext(ctx, `INSERT OR REPLACE INTO analyses
 			(submission_id, score, verdict, confidence, attack_type, brand_json, llm_json, recommendations_json, warnings_json, duration_ms)
@@ -185,6 +195,63 @@ func campaignKey(sub *domain.Submission) string {
 	}
 	parts := append([]string{sub.Message.From.Domain}, sub.Message.LinkDomains()...)
 	return strings.Join(parts, "|")
+}
+
+func submissionIOCs(sub *domain.Submission) []IOC {
+	if sub == nil || sub.Message == nil {
+		return nil
+	}
+	seen := map[string]bool{}
+	var out []IOC
+	add := func(kind, value string) {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return
+		}
+		key := kind + "\x00" + strings.ToLower(value)
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		if kind != "url" {
+			value = strings.ToLower(value)
+		}
+		out = append(out, IOC{OrgID: sub.OrgID, SubmissionID: sub.ID, Kind: kind, Value: value, CreatedAt: sub.ReceivedAt})
+	}
+	for _, d := range []string{sub.Message.From.Domain, sub.Message.ReplyTo.Domain, sub.Message.ReturnPath.Domain} {
+		add("domain", d)
+	}
+	for _, l := range sub.Message.Links {
+		add("domain", l.Domain)
+		add("url", l.Href)
+	}
+	for _, a := range sub.Message.Attachments {
+		add("sha256", a.SHA256)
+	}
+	return out
+}
+
+// ListIOCs returns indicators from confirmed phishing submissions only.
+func (s *SQLite) ListIOCs(ctx context.Context, orgID string, since time.Time) ([]IOC, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT i.org_id, i.submission_id, i.kind, i.value, i.created_at
+		FROM submission_iocs i JOIN submissions s ON s.id = i.submission_id
+		WHERE s.status = ? AND s.received_at >= ? AND (s.org_id = ? OR ? = '')
+		ORDER BY i.created_at ASC, i.kind, i.value`, string(domain.StatusConfirmedPhish), ts(since), orgID, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []IOC
+	for rows.Next() {
+		var i IOC
+		var created string
+		if err := rows.Scan(&i.OrgID, &i.SubmissionID, &i.Kind, &i.Value, &created); err != nil {
+			return nil, err
+		}
+		i.CreatedAt = parseTS(created)
+		out = append(out, i)
+	}
+	return out, rows.Err()
 }
 
 const selectSubmission = `SELECT s.id, s.org_id, s.channel, s.submitted_by, s.kind, s.received_at, s.status, s.reviewed_by,
@@ -342,6 +409,9 @@ func (s *SQLite) DeleteSubmission(ctx context.Context, id string) error {
 // PurgeOlderThan enforces retention.
 func (s *SQLite) PurgeOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
 	c := ts(cutoff)
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM submission_iocs WHERE submission_id IN (SELECT id FROM submissions WHERE received_at < ?)`, c); err != nil {
+		return 0, err
+	}
 	if _, err := s.db.ExecContext(ctx, `DELETE FROM signals WHERE submission_id IN (SELECT id FROM submissions WHERE received_at < ?)`, c); err != nil {
 		return 0, err
 	}

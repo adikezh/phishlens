@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/phishlens/phishlens/internal/config"
 	"github.com/phishlens/phishlens/internal/domain"
+	"github.com/phishlens/phishlens/internal/report"
 )
 
 // testApp builds an offline app with a temp SQLite database.
@@ -98,6 +100,19 @@ func TestDeleteAndStats(t *testing.T) {
 	require.Equal(t, 1, st.Total)
 	require.Equal(t, 1, st.ByVerdict["phishing"])
 	require.NotEmpty(t, st.TopSignals)
+	require.NoError(t, a.Store.UpdateSubmissionStatus(context.Background(), sub.ID, domain.StatusConfirmedPhish, "analyst"))
+	iocs, err := a.Store.ListIOCs(context.Background(), "", time.Now().Add(-time.Hour))
+	require.NoError(t, err)
+	require.NotEmpty(t, iocs)
+	stix, err := report.ExportIOC(context.Background(), a.Store, time.Now().Add(-time.Hour), "stix")
+	require.NoError(t, err)
+	var bundle map[string]any
+	require.NoError(t, json.Unmarshal(stix, &bundle))
+	require.Equal(t, "bundle", bundle["type"])
+	require.NotEmpty(t, bundle["objects"])
+	misp, err := report.ExportIOC(context.Background(), a.Store, time.Now().Add(-time.Hour), "misp")
+	require.NoError(t, err)
+	require.Contains(t, string(misp), "PhishLens confirmed phishing IOC export")
 
 	require.NoError(t, a.Store.DeleteSubmission(context.Background(), sub.ID))
 	_, err = a.Store.GetSubmission(context.Background(), sub.ID)
