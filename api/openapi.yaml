@@ -201,9 +201,42 @@ paths:
         "200": { description: OK }
   /v1/webhooks:
     get:
-      summary: Webhook-подписки (TODO)
+      summary: Список HMAC webhook-подписок (admin)
       responses:
-        "501": { $ref: "#/components/responses/Error" }
+        "200":
+          description: Подписки без секретов
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Webhook" } }
+    post:
+      summary: Создать HMAC webhook-подписку (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, url, secret]
+              properties:
+                name: { type: string, maxLength: 128 }
+                url: { type: string, format: uri, description: "HTTPS; HTTP разрешён только для localhost" }
+                secret: { type: string, minLength: 16, writeOnly: true }
+                enabled: { type: boolean, default: true }
+      responses:
+        "201":
+          description: Создано; секрет не возвращается
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Webhook" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /v1/webhooks/{id}:
+    delete:
+      summary: Удалить webhook-подписку (admin)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "204": { description: удалено }
+        "404": { $ref: "#/components/responses/Error" }
 components:
   securitySchemes:
     ApiKey: { type: apiKey, in: header, name: X-API-Key }
@@ -258,6 +291,16 @@ components:
           type: object
           description: Помечено ai_generated=true; совещательное мнение
         recommendations: { type: array, items: { type: string } }
+    Webhook:
+      type: object
+      properties:
+        id: { type: string }
+        org_id: { type: string }
+        name: { type: string }
+        url: { type: string, format: uri }
+        enabled: { type: boolean }
+        secret_configured: { type: boolean }
+        created_at: { type: string, format: date-time }
         warnings: { type: array, items: { type: string } }
         duration_ms: { type: integer }
     AnalyzeResponse:

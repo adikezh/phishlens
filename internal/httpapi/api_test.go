@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -179,6 +180,53 @@ func TestUserCanReportSubmission(t *testing.T) {
 	resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Equal(t, domain.StatusInReview, got.Status)
+}
+
+func TestAdminWebhookLifecycle(t *testing.T) {
+	t.Setenv("PL_ENC_KEY", strings.Repeat("ab", 32))
+	srv, a := newTestServer(t)
+	admin, err := GenerateKey()
+	require.NoError(t, err)
+	require.NoError(t, a.Store.CreateAPIKey(context.Background(), store.APIKey{ID: ulid.Make().String(), Name: "adm", Role: RoleAdmin, OrgID: "org-a", KeyHash: HashKey(admin), CreatedAt: time.Now()}))
+
+	request := func(method, path string, body string) *http.Response {
+		req, err := http.NewRequest(method, srv.URL+path, strings.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer "+admin)
+		if body != "" {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		return resp
+	}
+
+	resp := request(http.MethodPost, "/v1/webhooks", `{"name":"soar","url":"https://soar.example.test/phishlens","secret":"0123456789abcdef"}`)
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	var created store.Webhook
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&created))
+	resp.Body.Close()
+	require.NotEmpty(t, created.ID)
+	require.True(t, created.SecretConfigured)
+	require.Empty(t, created.Secret)
+
+	resp = request(http.MethodGet, "/v1/webhooks", "")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	var listed []store.Webhook
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&listed))
+	resp.Body.Close()
+	require.Len(t, listed, 1)
+	require.Empty(t, listed[0].Secret)
+
+	resp = request(http.MethodDelete, "/v1/webhooks/"+created.ID, "")
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	resp.Body.Close()
+	resp = request(http.MethodGet, "/v1/webhooks", "")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	var after []store.Webhook
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&after))
+	resp.Body.Close()
+	require.Empty(t, after)
 }
 
 func TestDetectKind(t *testing.T) {

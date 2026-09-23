@@ -137,6 +137,9 @@ func New(ctx context.Context, cfg *config.Config, log zerolog.Logger, opts Optio
 	}
 
 	a.Notify = notify.NewFanout(cfg.Integrations, log)
+	if a.Store != nil {
+		a.Notify.SetWebhookStore(a.Store)
+	}
 	a.Analyzer = NewAnalyzer(a)
 	log.Info().
 		Str("version", buildinfo.Version).

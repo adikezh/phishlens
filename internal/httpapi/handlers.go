@@ -8,12 +8,14 @@ import (
 	"mime"
 	"net"
 	"net/http"
+	"net/url"
 	"path"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/phishlens/phishlens/internal/app"
 	"github.com/phishlens/phishlens/internal/brands"
@@ -515,6 +517,102 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDemos(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, app.Demos())
+}
+
+func (s *Server) handleListWebhooks(w http.ResponseWriter, r *http.Request) {
+	if s.app.Store == nil {
+		writeJSON(w, http.StatusOK, []store.Webhook{})
+		return
+	}
+	webhooks, err := s.app.Store.ListWebhooks(r.Context(), PrincipalFrom(r.Context()).OrgID)
+	if err != nil {
+		s.log.Error().Err(err).Msg("list webhooks")
+		writeError(w, http.StatusInternalServerError, "internal", "webhook storage error")
+		return
+	}
+	if webhooks == nil {
+		webhooks = []store.Webhook{}
+	}
+	writeJSON(w, http.StatusOK, webhooks)
+}
+
+func (s *Server) handleCreateWebhook(w http.ResponseWriter, r *http.Request) {
+	if s.app.Store == nil {
+		writeError(w, http.StatusServiceUnavailable, "storage_unavailable", "webhooks require storage")
+		return
+	}
+	var body struct {
+		Name    string `json:"name"`
+		URL     string `json:"url"`
+		Secret  string `json:"secret"`
+		Enabled *bool  `json:"enabled"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 16<<10)).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "invalid JSON")
+		return
+	}
+	body.Name, body.URL, body.Secret = strings.TrimSpace(body.Name), strings.TrimSpace(body.URL), strings.TrimSpace(body.Secret)
+	if body.Name == "" || len(body.Name) > 128 || !validWebhookURL(body.URL) {
+		writeError(w, http.StatusBadRequest, "bad_request", "name and an https webhook URL are required")
+		return
+	}
+	if len([]byte(body.Secret)) < 16 || len([]byte(body.Secret)) > 4096 {
+		writeError(w, http.StatusBadRequest, "bad_request", "secret must be 16..4096 bytes")
+		return
+	}
+	enabled := true
+	if body.Enabled != nil {
+		enabled = *body.Enabled
+	}
+	p := PrincipalFrom(r.Context())
+	webhook := store.Webhook{ID: ulid.Make().String(), OrgID: p.OrgID, Name: body.Name, URL: body.URL, Secret: body.Secret, Enabled: enabled, CreatedAt: time.Now().UTC()}
+	if err := s.app.Store.CreateWebhook(r.Context(), webhook); err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "unique") {
+			writeError(w, http.StatusConflict, "conflict", "webhook name already exists")
+			return
+		}
+		s.log.Error().Err(err).Msg("create webhook")
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	webhook.Secret = ""
+	webhook.SecretConfigured = true
+	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "webhook.create", Target: webhook.ID, Details: webhook.Name})
+	writeJSON(w, http.StatusCreated, webhook)
+}
+
+func (s *Server) handleDeleteWebhook(w http.ResponseWriter, r *http.Request) {
+	if s.app.Store == nil {
+		writeError(w, http.StatusNotFound, "not_found", "storage disabled")
+		return
+	}
+	p := PrincipalFrom(r.Context())
+	id := chi.URLParam(r, "id")
+	if err := s.app.Store.DeleteWebhook(r.Context(), p.OrgID, id); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "webhook not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "webhook.delete", Target: id})
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func validWebhookURL(raw string) bool {
+	u, err := url.ParseRequestURI(raw)
+	if err != nil || u.User != nil || u.Hostname() == "" || u.Fragment != "" {
+		return false
+	}
+	if u.Scheme == "https" {
+		return true
+	}
+	if u.Scheme == "http" {
+		host := strings.TrimSuffix(strings.ToLower(u.Hostname()), ".")
+		return host == "localhost" || net.ParseIP(host).IsLoopback()
+	}
+	return false
 }
 
 // handleSignals lists registered checks with their configured weights (signals reference).

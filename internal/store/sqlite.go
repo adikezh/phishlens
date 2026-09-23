@@ -618,6 +618,90 @@ func (s *SQLite) RevokeAPIKey(ctx context.Context, id string) error {
 	return nil
 }
 
+func (s *SQLite) sealWebhookSecret(secret string) (string, error) {
+	if s.cipher == nil {
+		return "", errors.New("store: webhook secret requires storage encryption key")
+	}
+	sealed, err := s.cipher.Seal([]byte(secret))
+	if err != nil {
+		return "", fmt.Errorf("store: encrypt webhook secret: %w", err)
+	}
+	return "enc:" + base64.StdEncoding.EncodeToString(sealed), nil
+}
+
+func (s *SQLite) openWebhookSecret(ciphertext string) (string, error) {
+	if !strings.HasPrefix(ciphertext, "enc:") || s.cipher == nil {
+		return "", errors.New("store: webhook secret is unavailable without storage encryption key")
+	}
+	b, err := base64.StdEncoding.DecodeString(ciphertext[4:])
+	if err != nil {
+		return "", fmt.Errorf("store: decode webhook secret: %w", err)
+	}
+	plain, err := s.cipher.Open(b)
+	if err != nil {
+		return "", fmt.Errorf("store: decrypt webhook secret: %w", err)
+	}
+	return string(plain), nil
+}
+
+// ListWebhooks returns subscriptions visible to an organization. Empty orgID
+// is reserved for administrative/global inspection.
+func (s *SQLite) ListWebhooks(ctx context.Context, orgID string) ([]Webhook, error) {
+	rows, err := s.queryContext(ctx, `SELECT id, org_id, name, url, secret_cipher, enabled, created_at
+		FROM webhooks WHERE org_id = ? OR ? = '' ORDER BY created_at DESC`, orgID, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Webhook
+	for rows.Next() {
+		var w Webhook
+		var secretCipher, created string
+		var enabled int
+		if err := rows.Scan(&w.ID, &w.OrgID, &w.Name, &w.URL, &secretCipher, &enabled, &created); err != nil {
+			return nil, err
+		}
+		w.Enabled, w.CreatedAt = enabled != 0, parseTS(created)
+		w.Secret, err = s.openWebhookSecret(secretCipher)
+		if err != nil {
+			return nil, err
+		}
+		w.SecretConfigured = w.Secret != ""
+		out = append(out, w)
+	}
+	return out, rows.Err()
+}
+
+// CreateWebhook persists an encrypted HMAC secret.
+func (s *SQLite) CreateWebhook(ctx context.Context, w Webhook) error {
+	secret, err := s.sealWebhookSecret(w.Secret)
+	if err != nil {
+		return err
+	}
+	enabled := 0
+	if w.Enabled {
+		enabled = 1
+	}
+	_, err = s.execContext(ctx, `INSERT INTO webhooks
+		(id, org_id, name, url, secret_cipher, enabled, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT (id) DO UPDATE SET name=excluded.name, url=excluded.url,
+		secret_cipher=excluded.secret_cipher, enabled=excluded.enabled`,
+		w.ID, w.OrgID, w.Name, w.URL, secret, enabled, ts(w.CreatedAt))
+	return err
+}
+
+// DeleteWebhook removes one subscription within the caller's organization.
+func (s *SQLite) DeleteWebhook(ctx context.Context, orgID, id string) error {
+	res, err := s.execContext(ctx, `DELETE FROM webhooks WHERE org_id = ? AND id = ?`, orgID, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // Stats aggregates counts since a point in time.
 func (s *SQLite) Stats(ctx context.Context, orgID string, since time.Time) (*Stats, error) {
 	st := &Stats{Since: since, ByVerdict: map[string]int{}, ByStatus: map[string]int{}, ByAttackType: map[string]int{}}

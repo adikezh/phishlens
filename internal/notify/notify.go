@@ -13,6 +13,7 @@ import (
 
 	"github.com/phishlens/phishlens/internal/config"
 	"github.com/phishlens/phishlens/internal/domain"
+	"github.com/phishlens/phishlens/internal/store"
 )
 
 // ErrNotImplemented marks stubbed integrations.
@@ -69,6 +70,7 @@ type Notifier interface {
 type Fanout struct {
 	notifiers []Notifier
 	log       zerolog.Logger
+	webhooks  store.Store
 }
 
 // NewFanout builds notifiers from config.
@@ -89,6 +91,10 @@ func NewFanout(cfg config.Integrations, log zerolog.Logger) *Fanout {
 // Add registers an extra notifier (tests, plugins).
 func (f *Fanout) Add(n Notifier) { f.notifiers = append(f.notifiers, n) }
 
+// SetWebhookStore enables encrypted, org-scoped webhook subscriptions managed
+// through the admin API. Static config webhooks remain supported separately.
+func (f *Fanout) SetWebhookStore(st store.Store) { f.webhooks = st }
+
 // Notify delivers to all; safe to call in a goroutine.
 func (f *Fanout) Notify(ctx context.Context, sub *domain.Submission) {
 	if f == nil {
@@ -98,6 +104,25 @@ func (f *Fanout) Notify(ctx context.Context, sub *domain.Submission) {
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		if err := n.Notify(ctx, sub); err != nil && !errors.Is(err, ErrNotImplemented) {
 			f.log.Warn().Err(err).Str("notifier", n.Name()).Str("id", sub.ID).Msg("notify failed")
+		}
+		cancel()
+	}
+	if f.webhooks == nil || sub == nil {
+		return
+	}
+	subscriptions, err := f.webhooks.ListWebhooks(ctx, sub.OrgID)
+	if err != nil {
+		f.log.Warn().Err(err).Str("org_id", sub.OrgID).Msg("load webhook subscriptions")
+		return
+	}
+	for _, subscription := range subscriptions {
+		if !subscription.Enabled || subscription.URL == "" || subscription.Secret == "" {
+			continue
+		}
+		w := NewWebhook(subscription.URL, subscription.Secret)
+		nctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		if err := w.Notify(nctx, sub); err != nil {
+			f.log.Warn().Err(err).Str("notifier", w.Name()).Str("webhook_id", subscription.ID).Str("id", sub.ID).Msg("notify failed")
 		}
 		cancel()
 	}

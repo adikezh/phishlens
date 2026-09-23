@@ -52,6 +52,19 @@ type APIKey struct {
 	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
 }
 
+// Webhook is an org-scoped HMAC webhook subscription. Secret is internal
+// runtime material and is never serialized by the API because of json:"-".
+type Webhook struct {
+	ID               string    `json:"id"`
+	OrgID            string    `json:"org_id,omitempty"`
+	Name             string    `json:"name"`
+	URL              string    `json:"url"`
+	Enabled          bool      `json:"enabled"`
+	Secret           string    `json:"-"`
+	SecretConfigured bool      `json:"secret_configured"`
+	CreatedAt        time.Time `json:"created_at"`
+}
+
 // SubmissionFilter narrows ListSubmissions.
 type SubmissionFilter struct {
 	OrgID   string
@@ -122,6 +135,10 @@ type Store interface {
 	GetAPIKeyByHash(ctx context.Context, hash string) (*APIKey, error)
 	ListAPIKeys(ctx context.Context, orgID string) ([]APIKey, error)
 	RevokeAPIKey(ctx context.Context, id string) error
+
+	ListWebhooks(ctx context.Context, orgID string) ([]Webhook, error)
+	CreateWebhook(ctx context.Context, w Webhook) error
+	DeleteWebhook(ctx context.Context, orgID, id string) error
 
 	Stats(ctx context.Context, orgID string, since time.Time) (*Stats, error)
 	Audit(ctx context.Context, e AuditEntry) error

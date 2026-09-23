@@ -59,8 +59,9 @@ func (s *Server) Routes(r chi.Router) {
 		v1.With(requireRole(RoleAnalyst, RoleAdmin)).Delete("/lists/{kind}/{value}", s.handleRemoveEntry)
 
 		v1.With(requireRole(RoleAnalyst, RoleAdmin)).Get("/stats", s.handleStats)
-		v1.With(requireRole(RoleAdmin)).Get("/webhooks", s.handleNotImplemented)
-		v1.With(requireRole(RoleAdmin)).Post("/webhooks", s.handleNotImplemented)
+		v1.With(requireRole(RoleAdmin)).Get("/webhooks", s.handleListWebhooks)
+		v1.With(requireRole(RoleAdmin)).Post("/webhooks", s.handleCreateWebhook)
+		v1.With(requireRole(RoleAdmin)).Delete("/webhooks/{id}", s.handleDeleteWebhook)
 		v1.Get("/signals", s.handleSignals)
 	})
 }
@@ -120,10 +121,6 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 		out["llm_providers"] = s.app.LLM.Providers()
 	}
 	writeJSON(w, http.StatusOK, out)
-}
-
-func (s *Server) handleNotImplemented(w http.ResponseWriter, _ *http.Request) {
-	writeError(w, http.StatusNotImplemented, "not_implemented", "this endpoint is planned but not implemented yet")
 }
 
 // ---- helpers ----------------------------------------------------------------

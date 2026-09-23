@@ -18,6 +18,8 @@ that require external accounts, providers, or deployment-specific decisions.
   STIX 2.1 or MISP JSON through `phishlens ioc export`.
 - Configured Wazuh HTTP delivery sends thresholded, privacy-safe verdict events
   with Basic Auth; unavailable Wazuh is reported as a degraded notification.
+- Admin API manages org-scoped HMAC webhook subscriptions; secrets are
+  encrypted at rest and managed subscriptions are delivered on verdicts.
 - `phishlens report` now emits Markdown, minimal valid DOCX, and PDF formats
   from privacy-safe aggregate statistics.
 - Helm chart renders and lints with PVC-backed SQLite, probes, resource limits,
