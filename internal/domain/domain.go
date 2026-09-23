@@ -221,13 +221,14 @@ type Attachment struct {
 
 // InlineImage is an embedded or uploaded image (for OCR / logo matching).
 type InlineImage struct {
-	ContentID string `json:"content_id,omitempty"`
-	MIME      string `json:"mime,omitempty"`
-	Size      int64  `json:"size"`
-	SHA256    string `json:"sha256,omitempty"`
-	PHash     string `json:"phash,omitempty"`
-	Width     int    `json:"width,omitempty"`
-	Height    int    `json:"height,omitempty"`
+	ContentID string   `json:"content_id,omitempty"`
+	MIME      string   `json:"mime,omitempty"`
+	Size      int64    `json:"size"`
+	SHA256    string   `json:"sha256,omitempty"`
+	PHash     string   `json:"phash,omitempty"`
+	Colors    []string `json:"colors,omitempty"`
+	Width     int      `json:"width,omitempty"`
+	Height    int      `json:"height,omitempty"`
 }
 
 // PDFInfo is static, non-rendering PDF evidence. The parser never executes

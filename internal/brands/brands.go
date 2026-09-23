@@ -8,7 +8,9 @@ package brands
 import (
 	"fmt"
 	"io"
+	"math"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -270,10 +272,56 @@ func (m *Matcher) Match(mail *domain.ParsedMail) *domain.BrandMatch {
 	if name, score := m.matchLogo(mail.Images); name != "" {
 		return &domain.BrandMatch{Name: name, Locale: m.locale(name), Method: "logo", Score: score, Official: m.IsOfficial(name, mail.From.Domain)}
 	}
+	if name, score := m.matchColor(mail.Images); name != "" {
+		return &domain.BrandMatch{Name: name, Locale: m.locale(name), Method: "color", Score: score, Official: m.IsOfficial(name, mail.From.Domain)}
+	}
 	if name, score := m.MatchText(mail.Subject, mail.Text()); name != "" {
 		return &domain.BrandMatch{Name: name, Locale: m.locale(name), Method: "keyword", Score: score, Official: m.IsOfficial(name, mail.From.Domain)}
 	}
 	return nil
+}
+
+func (m *Matcher) matchColor(images []domain.InlineImage) (string, float64) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	bestName, best := "", 0.0
+	for _, img := range images {
+		for _, observed := range img.Colors {
+			or, og, ob, ok := parseHexColor(observed)
+			if !ok {
+				continue
+			}
+			for i := range m.brands {
+				for _, expected := range m.brands[i].Colors {
+					er, eg, eb, ok := parseHexColor(expected)
+					if !ok {
+						continue
+					}
+					distance := math.Sqrt(float64((or-er)*(or-er) + (og-eg)*(og-eg) + (ob-eb)*(ob-eb)))
+					if distance > 70 {
+						continue
+					}
+					score := 1 - distance/441
+					if score > best {
+						bestName, best = m.brands[i].Name, score
+					}
+				}
+			}
+		}
+	}
+	return bestName, best
+}
+
+func parseHexColor(value string) (int, int, int, bool) {
+	value = strings.TrimPrefix(strings.TrimSpace(value), "#")
+	if len(value) != 6 {
+		return 0, 0, 0, false
+	}
+	parsed, err := strconv.ParseUint(value, 16, 24)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+	return int(parsed >> 16), int((parsed >> 8) & 0xff), int(parsed & 0xff), true
 }
 
 func (m *Matcher) matchLogo(images []domain.InlineImage) (string, float64) {

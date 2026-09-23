@@ -48,6 +48,7 @@ func (p *Parser) Image(ctx context.Context, data []byte) (*domain.ParsedMail, er
 		if hash, hashErr := goimagehash.PerceptionHash(decoded); hashErr == nil {
 			pm.Images[0].PHash = hash.ToString()
 		}
+		pm.Images[0].Colors = dominantColors(decoded)
 		if qrURL := decodeQR(decoded); qrURL != "" {
 			pm.Links = append(pm.Links, domain.Link{Href: qrURL, Text: "QR"})
 		}
@@ -102,6 +103,7 @@ func imageFrom(content []byte, mime string, maxPixels int) domain.InlineImage {
 		if hash, hashErr := goimagehash.PerceptionHash(decoded); hashErr == nil {
 			img.PHash = hash.ToString()
 		}
+		img.Colors = dominantColors(decoded)
 	}
 	return img
 }

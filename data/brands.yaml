@@ -6,7 +6,7 @@
 # esp_domains — домены рассылочных платформ/партнёров, с которых бренд реально шлёт
 # keywords    — слова в теме/теле, по которым определяется имитация (без учёта регистра)
 # locale      — kz | ru | global
-# colors      — фирменные цвета (hex) for future screenshot colour matching
+# colors      — фирменные цвета (hex) for screenshot colour matching
 # logo_phash  — pHash логотипа; matched against decoded inline images
 brands:
   # ---------- Казахстан: банки и финтех ----------

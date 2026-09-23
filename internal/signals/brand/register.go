@@ -1,6 +1,6 @@
-// Package brand implements F-4.3.3: a brand is detected but the sender is not on
-// its official domains.
-// TODO(F-4.3.2): logo pHash / colour-scheme match on inline images and screenshots.
+// Package brand implements F-4.3.2/F-4.3.3: brand matching from domains,
+// keywords, logo pHash, and extracted image colour palettes, followed by the
+// strong signal for an unofficial sender.
 package brand
 
 import (

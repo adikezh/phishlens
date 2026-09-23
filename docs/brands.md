@@ -1,11 +1,13 @@
 # Бренды
 
-data/brands.yaml — стартовый набор (~60, цель ≥ 100). Поля: name, domains (официальные),
+data/brands.yaml — стартовый набор 100+ брендов. Поля: name, domains (официальные),
 esp_domains (рассыльщики бренда), keywords, locale, colors, logo_phash.
 
 Inline images and image submissions produce a perceptual hash. When a brand
 has a valid `logo_phash`, hashes within Hamming distance 8 produce a `logo`
-brand match. Colour matching is not enabled yet.
+brand match. Image palettes are also compared with configured `colors` and can
+produce a `color` brand match; this is advisory evidence and should be combined
+with domains or message content.
 
 Правила:
 - бесплатные почтовые домены (gmail.com, outlook.com, icloud.com) **не** являются доменами бренда —

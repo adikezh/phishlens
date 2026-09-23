@@ -87,8 +87,9 @@ that require external accounts, providers, or deployment-specific decisions.
   corpus remain external evidence gates.
 - Image and inline-image parsing now computes perceptual hashes from decoded
   pixels, brand matching consumes configured `logo_phash`, and external OCR
-  receives a re-encoded PNG without source EXIF metadata. Curated logo assets
-  and colour-scheme matching remain data/product gates.
+  receives a re-encoded PNG without source EXIF metadata. Image palette matching
+  is implemented; curated logo hashes and colour palettes remain data/product
+  quality gates.
 - A local `deploy/ocr` Tesseract adapter is now implemented and tested with
   Russian, English, and Kazakh language packs. The Compose profile, health
   endpoint, bounded image input, timeout, and degraded-main-service behavior

@@ -31,3 +31,17 @@ func TestMatchLogoPHash(t *testing.T) {
 	require.Equal(t, "logo", match.Method)
 	require.GreaterOrEqual(t, match.Score, 0.9)
 }
+
+func TestMatchBrandColor(t *testing.T) {
+	m := NewMatcher([]Brand{{Name: "Kaspi", Domains: []string{"kaspi.kz"}, Colors: []string{"#F14635"}}}, nil)
+	match := m.Match(&domain.ParsedMail{Images: []domain.InlineImage{{Colors: []string{"#F14635"}}}})
+	if match == nil {
+		t.Fatal("expected a color brand match")
+	}
+	if match.Name != "Kaspi" || match.Method != "color" {
+		t.Fatalf("match = %#v, want Kaspi/color", match)
+	}
+	if match.Score < 0.9 {
+		t.Fatalf("score = %.3f, want >= 0.9", match.Score)
+	}
+}
