@@ -52,7 +52,8 @@ func (p *Parser) attachmentFrom(name, mime string, content []byte) domain.Attach
 		a.MacroDetected = true
 	}
 	// TODO(A-03): legacy OLE .doc/.xls — richardlehane/mscfb + VBA stream search.
-	// TODO(A-04): PDF links/JS/forms via pdfcpu.
+	// PDF static analysis is handled by ParsePDF; this path only dispatches
+	// generic attachment metadata and must not render or execute PDF content.
 	return a
 }
 

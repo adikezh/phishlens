@@ -66,8 +66,23 @@
 
   <div class="flex items-center gap-3 text-xs text-slate-500">
     <span>id {{.Sub.ID}}</span>
-    <button class="rounded border px-2 py-0.5 hover:bg-slate-50" type="button" onclick="alert('TODO(F-4.6): отправка в очередь ИБ')">Сообщить в ИБ</button>
+    <input id="report-api-key" class="w-40 rounded border px-2 py-0.5" type="password" autocomplete="off" placeholder="API-ключ для отчёта">
+    <button class="rounded border px-2 py-0.5 hover:bg-slate-50" type="button" onclick="reportSubmission('{{.Sub.ID}}')">Сообщить в ИБ</button>
     <a class="underline" href="/v1/analyses/{{.Sub.ID}}">JSON</a>
   </div>
 </div>
+<script>
+async function reportSubmission(id) {
+  const key = document.getElementById('report-api-key').value.trim();
+  if (!key) {
+    alert('Для отправки нужен API-ключ с ролью user, analyst или admin.');
+    return;
+  }
+  const response = await fetch('/v1/submissions/' + encodeURIComponent(id) + '/report', {
+    method: 'POST', headers: {'X-API-Key': key}
+  });
+  const body = await response.json().catch(() => ({}));
+  alert(response.ok ? 'Сообщение отправлено в очередь ИБ.' : (body.message || 'Не удалось отправить сообщение.'));
+}
+</script>
 {{end}}

@@ -30,8 +30,8 @@
 | `signals.ReputationLookup` | `internal/signals` | `reputation.Client` (DNSBL, OpenPhish, RDAP; URLhaus with Auth-Key) |
 | `llm.Provider` | `internal/llm` | `OpenAICompatible`, `Anthropic` (official SDK), `Ollama` |
 | `parse.OCR` | `internal/parse` | `TesseractOCR` (HTTP к контейнеру), vision-LLM — TODO |
-| `store.Store` | `internal/store` | `SQLite` (modernc), Postgres — TODO |
-| `notify.Notifier` | `internal/notify` | `Webhook` (HMAC), `Wazuh`/`TheHive` — TODO |
+| `store.Store` | `internal/store` | `SQLite` (modernc); Postgres adapter remains a Business TODO |
+| `notify.Notifier` | `internal/notify` | HMAC webhook and privacy-safe Wazuh HTTP delivery; TheHive remains a Business TODO |
 | `ingest.Runner` | `internal/ingest` | imap / graph / telegram — TODO |
 
 ## Добавление сигнала
