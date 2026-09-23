@@ -11,7 +11,7 @@ services:
   phishlens:
     build: ..
     image: "${PHISHLENS_IMAGE:-ghcr.io/adikezh/phishlens:v0.2.5}"
-    ports: ["8082:8082"]
+    ports: ["${PHISHLENS_PORT:-8082}:8082"]
     environment:
       PL_STORAGE_DSN: "file:/app/var/phishlens.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
       PL_LOG_PRETTY: "false"

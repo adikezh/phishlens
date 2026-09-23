@@ -90,6 +90,9 @@ weights to -100..100. Review the output before using it as a pilot override.
 [`docs/public-demo-deployment.md`](docs/public-demo-deployment.md); он требует
 ваш Kubernetes/Ingress и не содержит фиктивных credentials.
 
+Если порт `8082` занят, локальный Compose можно запустить на другом порту:
+`$env:PHISHLENS_PORT=18082; docker compose -f deploy/docker-compose.yml up -d`.
+
 Схема конвейера и границы компонентов описаны в [architecture.md](docs/architecture.md),
 а сравнение с PhishTool, CheckPhish и Sublime — на `/landing`.
 Performance acceptance is documented in [performance.md](docs/performance.md).
