@@ -269,7 +269,7 @@ func newBrandsCmd() *cobra.Command {
 func newReportCmd() *cobra.Command {
 	var period, format, out, org string
 	cmd := &cobra.Command{
-		Use: "report", Short: "Отчёт за период (md реализован; docx/pdf — TODO)",
+		Use: "report", Short: "Отчёт за период (md/docx/pdf)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			d, err := periodDuration(period)
 			if err != nil {

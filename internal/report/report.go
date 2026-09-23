@@ -3,10 +3,14 @@
 package report
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
+	"sort"
 	"strings"
 	"time"
 
@@ -18,8 +22,7 @@ import (
 // ErrNotImplemented marks formats not yet supported.
 var ErrNotImplemented = errors.New("report: not implemented")
 
-// Generate renders a report for [since, now). Markdown is implemented; docx/pdf are TODO
-// (nguyenthenguyen/docx, johnfercher/maroto).
+// Generate renders a report for [since, now) in Markdown, DOCX, or PDF.
 func Generate(ctx context.Context, st store.Store, orgID string, since time.Time, format string) ([]byte, error) {
 	stats, err := st.Stats(ctx, orgID, since)
 	if err != nil {
@@ -28,11 +31,140 @@ func Generate(ctx context.Context, st store.Store, orgID string, since time.Time
 	switch format {
 	case "md", "markdown":
 		return []byte(markdown(stats)), nil
-	case "docx", "pdf":
-		return nil, fmt.Errorf("%w: %s", ErrNotImplemented, format)
+	case "docx":
+		return docx(stats)
+	case "pdf":
+		return pdf(stats), nil
 	default:
 		return nil, fmt.Errorf("report: unknown format %q", format)
 	}
+}
+
+func reportLines(s *store.Stats) []string {
+	lines := []string{
+		"PhishLens report from " + s.Since.Format("2006-01-02"),
+		fmt.Sprintf("Total submissions: %d", s.Total),
+		"",
+		"Verdicts:",
+	}
+	for _, k := range []string{"phishing", "suspicious", "needs_review", "clean"} {
+		lines = append(lines, fmt.Sprintf("%s: %d", k, s.ByVerdict[k]))
+	}
+	lines = append(lines, "", "Statuses:")
+	lines = appendSortedCounts(lines, s.ByStatus)
+	lines = append(lines, "", "Attack types:")
+	lines = appendSortedCounts(lines, s.ByAttackType)
+	lines = append(lines, "", "Top brands:")
+	for _, nc := range s.TopBrands {
+		lines = append(lines, fmt.Sprintf("%s: %d", nc.Name, nc.Count))
+	}
+	lines = append(lines, "", "Top signals:")
+	for _, nc := range s.TopSignals {
+		lines = append(lines, fmt.Sprintf("%s: %d", nc.Name, nc.Count))
+	}
+	lines = append(lines, "", fmt.Sprintf("Average analysis time: %d ms", s.AvgDuration))
+	return lines
+}
+
+func appendSortedCounts(lines []string, counts map[string]int) []string {
+	keys := make([]string, 0, len(counts))
+	for k := range counts {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		lines = append(lines, fmt.Sprintf("%s: %d", k, counts[k]))
+	}
+	return lines
+}
+
+func docx(s *store.Stats) ([]byte, error) {
+	var out bytes.Buffer
+	zw := zip.NewWriter(&out)
+	files := map[string]string{
+		"[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`,
+		"_rels/.rels":         `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`,
+		"word/document.xml":   docxDocument(reportLines(s)),
+	}
+	for name, content := range files {
+		w, err := zw.Create(name)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := w.Write([]byte(content)); err != nil {
+			return nil, err
+		}
+	}
+	if err := zw.Close(); err != nil {
+		return nil, err
+	}
+	return out.Bytes(), nil
+}
+
+func docxDocument(lines []string) string {
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>`)
+	for _, line := range lines {
+		b.WriteString(`<w:p><w:r><w:t xml:space="preserve">`)
+		b.WriteString(html.EscapeString(line))
+		b.WriteString(`</w:t></w:r></w:p>`)
+	}
+	b.WriteString(`<w:sectPr/></w:body></w:document>`)
+	return b.String()
+}
+
+// pdf emits a small standards-compatible one-page PDF using a built-in Type 1
+// font. Non-ASCII glyphs are replaced because embedding customer fonts would
+// make the Community binary large; DOCX preserves the original UTF-8 text.
+func pdf(s *store.Stats) []byte {
+	lines := reportLines(s)
+	var content strings.Builder
+	content.WriteString("BT /F1 11 Tf 50 760 Td\n")
+	for i, line := range lines {
+		if i > 0 {
+			content.WriteString("0 -15 Td\n")
+		}
+		content.WriteByte('(')
+		content.WriteString(pdfASCII(line))
+		content.WriteString(") Tj\n")
+	}
+	content.WriteString("ET")
+	objects := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+		"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+		fmt.Sprintf("<< /Length %d >>\nstream\n%s\nendstream", len(content.String()), content.String()),
+	}
+	var out bytes.Buffer
+	out.WriteString("%PDF-1.4\n")
+	offsets := []int{0}
+	for i, obj := range objects {
+		offsets = append(offsets, out.Len())
+		fmt.Fprintf(&out, "%d 0 obj\n%s\nendobj\n", i+1, obj)
+	}
+	xref := out.Len()
+	fmt.Fprintf(&out, "xref\n0 %d\n0000000000 65535 f \n", len(objects)+1)
+	for _, off := range offsets[1:] {
+		fmt.Fprintf(&out, "%010d 00000 n \n", off)
+	}
+	fmt.Fprintf(&out, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref)
+	return out.Bytes()
+}
+
+func pdfASCII(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if r < 32 || r > 126 {
+			b.WriteByte('?')
+			continue
+		}
+		if r == '\\' || r == '(' || r == ')' {
+			b.WriteByte('\\')
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }
 
 func markdown(s *store.Stats) string {
