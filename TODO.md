@@ -67,8 +67,8 @@ that require external accounts, providers, or deployment-specific decisions.
   retrieval, user-vs-admin queue RBAC, deletion, and browser-visible admin key
   loading. Verified locally on 2026-09-23 with `python scripts/ui_smoke.py
   http://127.0.0.1:18083 --admin-key <admin> --user-key <user>` against a
-  real `phishlens serve` process. Upload-limit coverage remains a separate
-  deployment check.
+  real `phishlens serve` process. With `--max-upload-mb 1`, the same script
+  also verifies an oversized multipart request returns HTTP 413.
 - [x] Add deterministic local weight tuning from analyst labels; pilot owners
   still must review and approve any tuned weights before deployment.
 - [x] Add fuzz tests for text/EML dispatch, HTML/URL extraction, and attachment listing paths.

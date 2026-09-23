@@ -5,7 +5,7 @@ import argparse
 from playwright.sync_api import sync_playwright
 
 
-def api_e2e(request, base_url: str, admin_key: str, user_key: str) -> None:
+def api_e2e(request, base_url: str, admin_key: str, user_key: str, max_upload_mb: int | None) -> None:
     def call(method: str, path: str, key: str, **kwargs):
         response = request.fetch(
             base_url + path,
@@ -33,14 +33,29 @@ def api_e2e(request, base_url: str, admin_key: str, user_key: str) -> None:
     missing = call("GET", "/v1/analyses/" + submission_id, admin_key)
     assert missing.status == 404, f"deleted analysis returned {missing.status}"
 
+    if max_upload_mb:
+        oversized = call(
+            "POST",
+            "/v1/analyze",
+            user_key,
+            multipart={
+                "file": {
+                    "name": "oversized.eml",
+                    "mimeType": "message/rfc822",
+                    "buffer": b"x" * (max_upload_mb * 1024 * 1024 + 1),
+                }
+            },
+        )
+        assert oversized.status == 413, f"upload limit returned {oversized.status}"
 
-def main(base_url: str, admin_key: str | None = None, user_key: str | None = None) -> None:
+
+def main(base_url: str, admin_key: str | None = None, user_key: str | None = None, max_upload_mb: int | None = None) -> None:
     console_errors = []
     with sync_playwright() as playwright:
         if admin_key and user_key:
             request = playwright.request.new_context()
             try:
-                api_e2e(request, base_url, admin_key, user_key)
+                api_e2e(request, base_url, admin_key, user_key, max_upload_mb)
             finally:
                 request.dispose()
 
@@ -83,7 +98,8 @@ if __name__ == "__main__":
     parser.add_argument("base_url", nargs="?", default="http://127.0.0.1:18082")
     parser.add_argument("--admin-key")
     parser.add_argument("--user-key")
+    parser.add_argument("--max-upload-mb", type=int)
     args = parser.parse_args()
     if bool(args.admin_key) != bool(args.user_key):
         parser.error("--admin-key and --user-key must be supplied together")
-    main(args.base_url, args.admin_key, args.user_key)
+    main(args.base_url, args.admin_key, args.user_key, args.max_upload_mb)
