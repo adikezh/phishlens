@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PhishLens — проверка письма</title>
+  <!-- TODO: vendor tailwind (CLI build) + htmx for offline deployments -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12" crossorigin="anonymous"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+<header class="border-b bg-white">
+  <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-xl font-bold">🔍 PhishLens</span>
+      <span class="text-xs rounded bg-slate-100 px-2 py-0.5">{{.Edition}} · {{.Version}}</span>
+    </div>
+    <nav class="text-sm text-slate-600 flex gap-4">
+      <a class="hover:text-slate-900" href="/v1/signals">Сигналы ({{.Signals}})</a>
+      <a class="hover:text-slate-900" href="/v1/brands">Бренды ({{.Brands}})</a>
+      <a class="hover:text-slate-900" href="/health">Health</a>
+      <a class="hover:text-slate-900" href="/metrics">Metrics</a>
+    </nav>
+  </div>
+</header>
+
+<main class="mx-auto max-w-7xl px-4 py-6 grid gap-6 lg:grid-cols-2">
+  <section class="rounded-lg border bg-white p-4">
+    <h1 class="text-lg font-semibold mb-2">Отправь письмо — получи вердикт и объяснение</h1>
+    <p class="text-sm text-slate-600 mb-4">Вставьте текст письма (лучше с заголовками) или загрузите <code>.eml</code> / <code>.msg</code> / скриншот. Письма не сохраняются в Community-режиме.</p>
+
+    <form hx-post="/ui/analyze" hx-target="#result" hx-encoding="multipart/form-data" hx-indicator="#spinner" class="space-y-3">
+      <textarea name="text" rows="14" class="w-full rounded border p-2 font-mono text-sm" placeholder="From: ...&#10;Subject: ...&#10;&#10;Текст письма"></textarea>
+      <div class="flex flex-wrap items-center gap-3 text-sm">
+        <input type="file" name="file" accept=".eml,.msg,.png,.jpg,.jpeg,.txt" class="text-sm">
+        <label class="flex items-center gap-1"><span>Язык</span>
+          <select name="lang" class="rounded border px-1 py-0.5">
+            <option value="ru" {{if eq .Lang "ru"}}selected{{end}}>ru</option>
+            <option value="en" {{if eq .Lang "en"}}selected{{end}}>en</option>
+            <option value="kz" {{if eq .Lang "kz"}}selected{{end}}>kz</option>
+          </select>
+        </label>
+        {{if .LLM}}<label class="flex items-center gap-1"><input type="checkbox" name="no_llm"> без LLM</label>{{end}}
+        <button class="rounded bg-slate-900 px-4 py-1.5 text-white hover:bg-slate-700" type="submit">Проверить</button>
+        <span id="spinner" class="htmx-indicator text-slate-500">анализ…</span>
+      </div>
+    </form>
+
+    <div class="mt-5">
+      <div class="text-sm font-medium mb-2">Демо-примеры</div>
+      <div class="flex flex-wrap gap-2">
+        {{range .Demos}}
+        <form hx-post="/ui/analyze" hx-target="#result" hx-encoding="multipart/form-data" hx-indicator="#spinner">
+          <input type="hidden" name="demo" value="{{.Name}}">
+          <input type="hidden" name="lang" value="{{$.Lang}}">
+          <button class="rounded border bg-slate-50 px-3 py-1 text-sm hover:bg-slate-100" type="submit">{{.Title}}</button>
+        </form>
+        {{end}}
+      </div>
+    </div>
+  </section>
+
+  <section id="result" class="rounded-lg border bg-white p-4 min-h-[300px]">
+    <p class="text-slate-400 text-sm">Здесь появится результат: шкала риска, сигналы с доказательствами, объяснение.</p>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,62 @@
+version: "3"
+
+vars:
+  BIN: bin/phishlens{{exeExt}}
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo dev
+  LDFLAGS: -s -w -X github.com/phishlens/phishlens/internal/buildinfo.Version={{.VERSION}}
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  build:
+    desc: Собрать бинарь
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o {{.BIN}} ./cmd/phishlens
+
+  run:
+    desc: Запустить сервер с example-конфигом
+    deps: [build]
+    cmds:
+      - "{{.BIN}} serve --config configs/config.example.yaml"
+
+  test:
+    desc: Unit-тесты
+    cmds:
+      - go test ./... -race -count=1
+
+  lint:
+    desc: vet + golangci-lint (если установлен)
+    cmds:
+      - go vet ./...
+      - cmd: golangci-lint run ./...
+        ignore_error: true
+
+  sec:
+    desc: govulncheck + gosec
+    cmds:
+      - cmd: govulncheck ./...
+        ignore_error: true
+      - cmd: gosec -quiet ./...
+        ignore_error: true
+
+  gen:
+    desc: Кодогенерация (sqlc, templ, oapi-codegen) - требует установленных CLI
+    cmds:
+      - cmd: sqlc generate
+        ignore_error: true
+      - cmd: templ generate
+        ignore_error: true
+
+  eval:
+    desc: Прогон корпуса и F1
+    deps: [build]
+    cmds:
+      - "{{.BIN}} eval --dir testdata/eml --expected testdata/expected --no-llm"
+
+  docker:
+    desc: Собрать образ
+    cmds:
+      - docker build -t ghcr.io/phishlens/phishlens:{{.VERSION}} .

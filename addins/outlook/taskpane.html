@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>PhishLens</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; margin: 12px; font-size: 13px; }
+    .verdict { padding: 6px 10px; border-radius: 4px; color: #fff; font-weight: 600; display: inline-block; }
+    .phishing { background: #dc2626; } .suspicious { background: #f59e0b; } .clean { background: #059669; } .needs_review { background: #7c3aed; }
+    .signal { border-left: 3px solid #f59e0b; padding: 4px 8px; margin: 4px 0; background: #fffbeb; }
+    button { padding: 6px 12px; }
+    #status { color: #666; }
+  </style>
+</head>
+<body>
+  <h3>PhishLens</h3>
+  <button id="check">Проверить письмо</button>
+  <button id="report" disabled>Сообщить в ИБ</button>
+  <p id="status"></p>
+  <div id="result"></div>
+  <script src="taskpane.js"></script>
+</body>
+</html>

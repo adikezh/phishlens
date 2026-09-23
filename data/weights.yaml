@@ -1,0 +1,66 @@
+# Веса сигналов (ТЗ F-4.5.1). Score = clamp(Σ weight × confidence, 0, 100).
+# Организация может переопределить любой вес — см. docs/signals/.
+thresholds:
+  phishing: 70
+  suspicious: 40
+
+signals:
+  # --- заголовки (H-xx) ---
+  header.displayname_email: 20
+  header.replyto_mismatch: 15
+  header.returnpath_mismatch: 10
+  header.messageid_mismatch: 8
+  header.messageid_missing: 5
+  header.date_skew: 8
+  # --- аутентификация (H-04) ---
+  auth.spf_fail: 20
+  auth.spf_softfail: 10
+  auth.dkim_fail: 15
+  auth.dkim_none: 5
+  auth.dmarc_fail: 25
+  auth.unverified: 3
+  auth.aligned_official: -40
+  # --- домены (D-xx) ---
+  domain.punycode: 20
+  domain.mixed_script: 25
+  domain.brand_lookalike: 30
+  domain.free_mail_org: 15
+  domain.risky_tld: 10
+  # --- ссылки (L-xx) ---
+  link.text_href_mismatch: 20
+  link.ip_host: 20
+  link.nonstandard_port: 8
+  link.shortener: 10
+  link.obfuscated: 15
+  link.punycode: 20
+  link.brand_lookalike: 30
+  link.many_domains: 8
+  # --- вложения (A-xx) ---
+  attachment.dangerous_ext: 30
+  attachment.double_ext: 25
+  attachment.rtl_override: 30
+  attachment.archive_encrypted: 25
+  attachment.archive_executable: 30
+  attachment.macro: 30
+  attachment.html_active: 25
+  # --- контент (C-xx) ---
+  content.urgency: 10
+  content.threat: 10
+  content.credential_request: 20
+  content.generic_greeting: 8
+  content.bec_pattern: 40
+  content.finance_request: 10
+  content.hidden_text: 15
+  content.image_only: 10
+  # --- бренд (F-4.3.3) ---
+  brand.sender_mismatch: 35
+  # --- репутация (R-xx) ---
+  reputation.org_blocklist: 100
+  reputation.org_allowlist: -30
+  reputation.domain_listed: 40
+  reputation.ip_listed: 30
+  reputation.domain_age: 25
+  # --- семантика (F-4.4.3) ---
+  semantic.llm_phishing: 25
+  semantic.llm_suspicious: 10
+  semantic.llm_clean: -15

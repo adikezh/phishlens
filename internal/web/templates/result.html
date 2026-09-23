@@ -1,0 +1,73 @@
+{{if .Error}}
+<div class="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{{.Error}}</div>
+{{else}}
+{{$a := .Sub.Result}}{{$m := .Sub.Message}}{{$lang := .Lang}}
+<div class="space-y-4">
+  <div class="flex items-center gap-4">
+    <div class="rounded px-3 py-1 text-white font-semibold {{verdictClass $a.Verdict}}">{{t $lang (printf "verdict.%s" $a.Verdict)}}</div>
+    <div class="text-3xl font-bold">{{$a.Score}}<span class="text-base text-slate-500">/100</span></div>
+    <div class="text-sm text-slate-500">уверенность {{pct $a.Confidence}}% · {{$a.AttackType}} · {{$a.DurationMs}} мс</div>
+  </div>
+  <div class="h-2 w-full rounded bg-slate-200 overflow-hidden">
+    <div class="h-2 {{verdictClass $a.Verdict}}" style="width: {{$a.Score}}%"></div>
+  </div>
+
+  {{if $a.Brand}}
+  <div class="text-sm">Бренд: <b>{{$a.Brand.Name}}</b> ({{$a.Brand.Method}}{{if $a.Brand.Official}}, официальный отправитель{{else}}, имитация{{end}})</div>
+  {{end}}
+
+  {{if $m}}
+  <details class="text-sm">
+    <summary class="cursor-pointer text-slate-600">Письмо</summary>
+    <dl class="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+      <dt class="text-slate-500">От</dt><dd>{{$m.From}}</dd>
+      {{if $m.ReplyTo.Addr}}<dt class="text-slate-500">Reply-To</dt><dd>{{$m.ReplyTo}}</dd>{{end}}
+      <dt class="text-slate-500">Тема</dt><dd>{{$m.Subject}}</dd>
+      <dt class="text-slate-500">Auth</dt><dd>spf={{$m.AuthResults.SPF}} dkim={{$m.AuthResults.DKIM}} dmarc={{$m.AuthResults.DMARC}}</dd>
+      <dt class="text-slate-500">Ссылки</dt><dd>{{len $m.Links}}</dd>
+      <dt class="text-slate-500">Вложения</dt><dd>{{len $m.Attachments}}</dd>
+    </dl>
+  </details>
+  {{end}}
+
+  <div>
+    <div class="font-medium mb-1">Сигналы ({{len $a.Signals}})</div>
+    {{if not $a.Signals}}<p class="text-sm text-slate-500">Признаков не найдено.</p>{{end}}
+    <ul class="space-y-1">
+      {{range $a.Signals}}
+      <li class="rounded border p-2 text-sm {{signalClass .Weight}}">
+        <div class="flex items-center justify-between gap-2">
+          <span>{{.Explanation}}</span>
+          <span class="shrink-0 font-mono text-xs text-slate-600">{{if gt .Weight 0}}+{{end}}{{.Weight}} × {{pct .Confidence}}%</span>
+        </div>
+        {{if .Evidence}}<details class="mt-1"><summary class="cursor-pointer text-xs text-slate-500">доказательство · {{.ID}} · {{.Source}}</summary><pre class="mt-1 whitespace-pre-wrap break-all rounded bg-white p-1 text-xs">{{.Evidence}}</pre></details>{{end}}
+      </li>
+      {{end}}
+    </ul>
+  </div>
+
+  {{if $a.LLM}}
+  <div class="rounded border border-violet-200 bg-violet-50 p-3 text-sm">
+    <div class="mb-1 flex items-center gap-2 font-medium"><span class="rounded bg-violet-600 px-1.5 py-0.5 text-xs text-white">ИИ-объяснение</span> {{$a.LLM.Provider}} · {{$a.LLM.Model}}{{if $a.LLM.Cached}} · кеш{{end}}</div>
+    <p>{{$a.LLM.Summary}}</p>
+    {{if $a.LLM.Highlights}}<ul class="mt-2 list-disc pl-5">{{range $a.LLM.Highlights}}<li><i>«{{.Quote}}»</i> — {{.Reason}}</li>{{end}}</ul>{{end}}
+    {{if $a.LLM.Tactics}}<div class="mt-2 text-xs text-slate-600">Тактики: {{range $a.LLM.Tactics}}<span class="mr-1 rounded bg-white px-1">{{.}}</span>{{end}}</div>{{end}}
+  </div>
+  {{end}}
+
+  <div>
+    <div class="font-medium mb-1">Что делать</div>
+    <ul class="list-disc pl-5 text-sm">{{range $a.Recommendations}}<li>{{.}}</li>{{end}}</ul>
+  </div>
+
+  {{if $a.Warnings}}
+  <details class="text-xs text-amber-700"><summary class="cursor-pointer">Деградация ({{len $a.Warnings}})</summary><ul class="list-disc pl-5">{{range $a.Warnings}}<li>{{.}}</li>{{end}}</ul></details>
+  {{end}}
+
+  <div class="flex items-center gap-3 text-xs text-slate-500">
+    <span>id {{.Sub.ID}}</span>
+    <button class="rounded border px-2 py-0.5 hover:bg-slate-50" type="button" onclick="alert('TODO(F-4.6): отправка в очередь ИБ')">Сообщить в ИБ</button>
+    <a class="underline" href="/v1/analyses/{{.Sub.ID}}">JSON</a>
+  </div>
+</div>
+{{end}}

@@ -1,0 +1,27 @@
+Return-Path: <noreply@halykbank.kz>
+Received: from mta1.halykbank.kz (mta1.halykbank.kz [93.185.72.10])
+	by mx.company.kz (Postfix) with ESMTPS id 3C1F9D02
+	for <a.serikova@company.kz>; Wed, 2 Sep 2026 08:00:12 +0500
+Authentication-Results: mx.company.kz;
+	spf=pass smtp.mailfrom=halykbank.kz;
+	dkim=pass header.d=halykbank.kz header.s=mta2026;
+	dmarc=pass (p=reject) header.from=halykbank.kz
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=halykbank.kz; s=mta2026;
+	h=from:to:subject:date:message-id; bh=47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=; b=demo
+From: "Halyk Bank" <noreply@halykbank.kz>
+To: a.serikova@company.kz
+Subject: Выписка по счёту за август 2026
+Date: Wed, 2 Sep 2026 08:00:05 +0500
+Message-ID: <stmt-2026-08-48213@halykbank.kz>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+<html><body>
+<p>Здравствуйте, Айгерим!</p>
+<p>Ваша ежемесячная выписка по счёту за август 2026 года сформирована и доступна
+в приложении Halyk Homebank в разделе «Счета → Выписки».</p>
+<p>Открыть приложение: <a href="https://halykbank.kz/statements">halykbank.kz/statements</a></p>
+<p>Если у вас есть вопросы, позвоните в контакт-центр по номеру 7111 (бесплатно с мобильного).</p>
+<p>С уважением,<br>Halyk Bank</p>
+</body></html>

@@ -1,0 +1,21 @@
+{
+  "timeZone": "Asia/Almaty",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.execute",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
+    "https://www.googleapis.com/auth/script.external_request"
+  ],
+  "addOns": {
+    "common": {
+      "name": "PhishLens",
+      "logoUrl": "https://example.invalid/addins/outlook/icon-128.png",
+      "useLocaleFromApp": true
+    },
+    "gmail": {
+      "contextualTriggers": [{ "unconditional": {}, "onTriggerFunction": "onGmailMessage" }]
+    }
+  }
+}

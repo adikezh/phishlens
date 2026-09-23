@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- PhishLens Outlook add-in (F-4.1.6). Replace BASE_URL with server.base_url before sideloading.
+     Admin deployment: M365 admin center - Integrated apps - Upload custom app - manifest. -->
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xsi:type="MailApp">
+  <Id>7d2e3a5c-0f7b-4b8e-9a1e-000000000001</Id>
+  <Version>0.1.0</Version>
+  <ProviderName>PhishLens</ProviderName>
+  <DefaultLocale>ru-RU</DefaultLocale>
+  <DisplayName DefaultValue="PhishLens"/>
+  <Description DefaultValue="Проверить письмо на фишинг и сообщить в ИБ"/>
+  <IconUrl DefaultValue="BASE_URL/addins/outlook/icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="BASE_URL/addins/outlook/icon-128.png"/>
+  <SupportUrl DefaultValue="BASE_URL/"/>
+  <AppDomains><AppDomain>BASE_URL</AppDomain></AppDomains>
+  <Hosts><Host Name="Mailbox"/></Hosts>
+  <Requirements>
+    <Sets><Set Name="Mailbox" MinVersion="1.8"/></Sets>
+  </Requirements>
+  <FormSettings>
+    <Form xsi:type="ItemRead">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="BASE_URL/addins/outlook/taskpane.html"/>
+        <RequestedHeight>400</RequestedHeight>
+      </DesktopSettings>
+    </Form>
+  </FormSettings>
+  <Permissions>ReadItem</Permissions>
+  <Rule xsi:type="RuleCollection" Mode="Or">
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read"/>
+  </Rule>
+  <DisableEntityHighlighting>false</DisableEntityHighlighting>
+  <!-- TODO: VersionOverrides with a ribbon button and MessageComposeCommandSurface -->
+</OfficeApp>

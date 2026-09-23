@@ -1,0 +1,66 @@
+package parse
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"image"
+	_ "image/gif"  // register decoders for DecodeConfig
+	_ "image/jpeg" // register decoders for DecodeConfig
+	_ "image/png"  // register decoders for DecodeConfig
+
+	"github.com/phishlens/phishlens/internal/domain"
+)
+
+// Image handles screenshot input (F-4.1.9): decodes header with pixel limits,
+// hashes it, then runs OCR when a backend is configured. Without OCR it returns
+// the partially filled mail and ErrOCRUnavailable so the caller can degrade.
+//
+// TODO(§11): strip EXIF before any external call; pHash (goimagehash) for logo matching;
+// QR decoding (gozxing, L-08).
+func (p *Parser) Image(ctx context.Context, data []byte) (*domain.ParsedMail, error) {
+	if len(data) == 0 {
+		return nil, ErrEmpty
+	}
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("parse image: %w", err)
+	}
+	if cfg.Width*cfg.Height > p.Limits.MaxImagePixels {
+		return nil, fmt.Errorf("%w: %dx%d pixels", ErrTooLarge, cfg.Width, cfg.Height)
+	}
+	sum := sha256.Sum256(data)
+	mime := "image/" + format
+	pm := &domain.ParsedMail{
+		Headers: map[string][]string{},
+		Images: []domain.InlineImage{{
+			MIME: mime, Size: int64(len(data)), SHA256: hex.EncodeToString(sum[:]),
+			Width: cfg.Width, Height: cfg.Height,
+		}},
+	}
+	if p.OCR == nil {
+		return pm, ErrOCRUnavailable
+	}
+	text, urls, err := p.OCR.Extract(ctx, data, mime)
+	if err != nil {
+		return pm, fmt.Errorf("parse image: ocr: %w", err)
+	}
+	pm.OCRText = text
+	pm.TextBody = text
+	for _, u := range urls {
+		pm.Links = append(pm.Links, domain.Link{Href: u, Text: "ocr"})
+	}
+	p.finish(pm)
+	return pm, nil
+}
+
+func imageFrom(content []byte, mime string, maxPixels int) domain.InlineImage {
+	sum := sha256.Sum256(content)
+	img := domain.InlineImage{MIME: mime, Size: int64(len(content)), SHA256: hex.EncodeToString(sum[:])}
+	if cfg, _, err := image.DecodeConfig(bytes.NewReader(content)); err == nil && cfg.Width*cfg.Height <= maxPixels {
+		img.Width, img.Height = cfg.Width, cfg.Height
+	}
+	return img
+}

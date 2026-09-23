@@ -1,0 +1,6 @@
+{
+  "verdict": "phishing",
+  "attack_type": "bec",
+  "min_score": 70,
+  "signals": ["content.bec_pattern", "domain.free_mail_org"]
+}

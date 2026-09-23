@@ -1,0 +1,67 @@
+# PhishLens
+
+> «Отправь письмо — получи вердикт и объяснение за 5 секунд».
+
+Self-hosted сервис анализа подозрительных писем: детерминированные проверки
+(заголовки, SPF/DKIM/DMARC, домены, ссылки, вложения), репутация, сходство с брендами
+(включая казахстанские — Kaspi, Halyk, eGov, Beeline…) и LLM-объяснение на языке сотрудника.
+
+**Статус: Community v1 ядро** — рабочий CLI/API/UI-конвейер для текста и EML,
+детерминированные сигналы, SQLite, API-ключи, списки, метрики и отчётность по
+локальному корпусу. Business-интеграции и внешние провайдеры остаются отдельными
+проверяемыми гейтами; текущий статус зафиксирован в [TODO.md](TODO.md).
+
+## Быстрый старт
+
+Требуется Go 1.26+ (зависимости `golang.org/x/*` в актуальных версиях; ТЗ допускает 1.23+ — при необходимости можно запинить старые версии).
+
+```bash
+go build -o bin/phishlens ./cmd/phishlens
+./bin/phishlens analyze --file data/demo/phish_kaspi_01.eml
+./bin/phishlens analyze --text "Срочно подтвердите перевод: http://kaspi-secure-login.com" --no-llm
+./bin/phishlens serve --config configs/config.example.yaml   # http://localhost:8082
+```
+
+С Taskfile (`go install github.com/go-task/task/v3/cmd/task@latest`):
+
+```bash
+task build && task test && task run
+```
+
+## Структура
+
+```
+cmd/phishlens         точка входа (cobra)
+internal/domain       модель данных (Submission, ParsedMail, Signal, Analysis)
+internal/parse        eml / msg / text / image → ParsedMail
+internal/signals      одна папка на категорию, один файл на сигнал; registry
+internal/brands       brands.yaml, matcher (домен / ключевые слова / homoglyph)
+internal/reputation   DNSBL, RDAP, TI-источники (заглушки + интерфейсы)
+internal/llm          провайдеры (openai_compatible, anthropic, ollama), редакция PII, схема
+internal/score        веса, пороги, жёсткие правила, вердикт
+internal/store        SQLite (modernc) / Postgres (TODO), миграции
+internal/httpapi      REST /v1/* (chi), /health, /metrics
+internal/web          UI (html/template + htmx; миграция на templ — TODO)
+internal/notify       webhook (HMAC), Wazuh, TheHive (заглушки)
+internal/ingest       IMAP / Graph / Telegram приёмники (заглушки)
+data/                 brands.yaml, weights.yaml, словари, демо-письма
+docs/signals/         документация каждого сигнала
+```
+
+## Что работает локально
+
+- `analyze --text/--file` — парсинг `.eml`/текста, 38 проверок, ru/en/kz объяснения, скоринг, вердикт, JSON-вывод.
+- `serve` — `POST /v1/analyze`, `GET /v1/analyses/{id}`, списки, бренды, `/health`, `/metrics`, UI на `/`.
+- `batch` / `eval` — прогон корпуса и precision/recall/F1 по золотым вердиктам (`--min-f1` для CI; три демо — macro-F1 = 1.0, это не production benchmark).
+- `migrate up`, `apikey create`, `lists allow|block add|list`.
+
+## Что не входит в подтверждённый Community v1
+
+`.msg` (CFB/MAPI), PDF/OCR/vision без отдельного backend, собственная проверка
+SPF/DKIM/DMARC по DNS, RDAP/TI-источники, sandbox (chromedp), IMAP/Graph/Telegram,
+OIDC, Postgres и hosted add-in validation. Они явно возвращают ошибку или
+degraded warning и не маскируются под успешный анализ. См. [TODO.md](TODO.md).
+
+## Лицензия
+
+Core — AGPL-3.0. Коммерческая лицензия для встраивания и enterprise — по запросу.

@@ -1,0 +1,22 @@
+[Unit]
+Description=PhishLens phishing analysis service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=phishlens
+Group=phishlens
+WorkingDirectory=/opt/phishlens
+ExecStart=/opt/phishlens/phishlens serve --config /etc/phishlens/config.yaml
+EnvironmentFile=-/etc/phishlens/env
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/phishlens
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

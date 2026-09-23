@@ -1,0 +1,30 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test ./... -race -count=1
+      - name: eval corpus (F1 gate)
+        run: go run ./cmd/phishlens eval --dir testdata/eml --expected testdata/expected --no-llm --min-f1 0.9
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go install golang.org/x/vuln/cmd/govulncheck@latest && govulncheck ./...
+      - run: go install github.com/securego/gosec/v2/cmd/gosec@latest && gosec -quiet ./... || true

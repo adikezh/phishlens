@@ -1,0 +1,12 @@
+# sqlc generate -> internal/store/sqlcgen
+# Сейчас store написан вручную (database/sql); генерацию подключить, когда установлен sqlc.
+version: "2"
+sql:
+  - engine: sqlite
+    schema: migrations
+    queries: internal/store/queries
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/store/sqlcgen
+        emit_json_tags: true

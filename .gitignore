@@ -1,0 +1,32 @@
+# binaries / build
+/bin/
+/dist/
+/phishlens
+/phishlens.exe
+*.test
+*.out
+coverage.*
+
+# runtime data
+data/*.db
+data/*.db-*
+var/
+*.log
+
+# secrets / local config
+.env
+configs/config.yaml
+configs/*.local.yaml
+
+# tooling
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# generated
+internal/store/sqlcgen/
+internal/web/**/*_templ.go
+graphify-out/
+node_modules/

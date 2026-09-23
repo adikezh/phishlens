@@ -1,0 +1,31 @@
+# Рисковые TLD (D-06): риск 0–15 по статистике злоупотреблений.
+# Итоговый вес сигнала = weights.yaml[domain.risky_tld] × (risk / 10).
+tlds:
+  zip: 15
+  mov: 12
+  top: 12
+  xyz: 10
+  tk: 12
+  ml: 12
+  ga: 12
+  cf: 12
+  gq: 12
+  buzz: 10
+  click: 10
+  link: 8
+  work: 8
+  rest: 8
+  icu: 10
+  cam: 10
+  monster: 10
+  su: 8
+  cn: 5
+  ru: 3
+  online: 6
+  site: 6
+  live: 5
+  shop: 5
+  store: 5
+  cyou: 10
+  sbs: 10
+  bond: 8

@@ -1,0 +1,6 @@
+{
+  "verdict": "phishing",
+  "attack_type": "credential_harvesting",
+  "min_score": 90,
+  "signals": ["auth.dmarc_fail", "link.text_href_mismatch", "link.brand_lookalike", "content.credential_request", "header.replyto_mismatch"]
+}

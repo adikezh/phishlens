@@ -1,0 +1,41 @@
+version: 2
+project_name: phishlens
+
+builds:
+  - id: phishlens
+    main: ./cmd/phishlens
+    binary: phishlens
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/phishlens/phishlens/internal/buildinfo.Version={{.Version}}
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+      - configs/config.example.yaml
+
+dockers:
+  - image_templates:
+      - ghcr.io/phishlens/phishlens:{{ .Version }}
+      - ghcr.io/phishlens/phishlens:latest
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - --platform=linux/amd64
+
+checksum:
+  name_template: checksums.txt
+
+sboms:
+  - artifacts: archive
+
+changelog:
+  sort: asc

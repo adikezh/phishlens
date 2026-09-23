@@ -1,0 +1,254 @@
+openapi: 3.0.3
+info:
+  title: PhishLens API
+  version: 0.1.0
+  description: |
+    Анализ подозрительных писем: вердикт, скор, сигналы с доказательствами, объяснение.
+    Аутентификация — `X-API-Key: pl_…` или `Authorization: Bearer pl_…`. `POST /v1/analyze`
+    доступен анонимно, если `auth.anonymous_analyze: true`.
+    Кодогенерация клиентов/сервера: `oapi-codegen` (TODO: подключить в Taskfile `gen`).
+servers:
+  - url: http://localhost:8082
+security:
+  - ApiKey: []
+  - Bearer: []
+paths:
+  /health:
+    get:
+      security: []
+      summary: Состояние сервиса
+      responses:
+        "200": { description: OK }
+  /metrics:
+    get:
+      security: []
+      summary: Prometheus-метрики
+      responses:
+        "200": { description: text/plain }
+  /v1/analyze:
+    post:
+      summary: Проанализировать письмо (текст / eml / изображение)
+      description: Синхронно ≤ 10 с. TODO(F-4.1.2) — 202 + Location при превышении бюджета.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AnalyzeRequest" }
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary, description: ".eml / .msg / .png / .jpg (≤ max_upload_mb)" }
+                text: { type: string }
+                demo: { type: string, description: "имя встроенного примера (см. /v1/demos)" }
+                lang: { type: string, enum: [ru, en, kz] }
+                no_llm: { type: boolean }
+      responses:
+        "200":
+          description: Результат анализа
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnalyzeResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+        "415": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "501": { $ref: "#/components/responses/Error" }
+  /v1/analyses/{id}:
+    get:
+      summary: Получить результат по ID
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnalyzeResponse" }
+        "404": { $ref: "#/components/responses/Error" }
+  /v1/submissions:
+    get:
+      summary: Очередь обращений (analyst/admin)
+      parameters:
+        - { name: verdict, in: query, schema: { type: string, enum: [phishing, suspicious, clean, needs_review] } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: since, in: query, schema: { type: string, example: "30d" } }
+        - { name: limit, in: query, schema: { type: integer, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/AnalyzeResponse" } }
+  /v1/submissions/{id}:
+    get:
+      summary: Обращение по ID (analyst/admin)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: OK }
+    patch:
+      summary: Решение аналитика
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [in_review, confirmed_phish, confirmed_clean, escalated] }
+      responses:
+        "200": { description: OK }
+    delete:
+      summary: Удалить обращение (приватность)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "204": { description: удалено }
+  /v1/brands:
+    get:
+      security: []
+      summary: Список брендов
+      responses:
+        "200": { description: OK }
+    post:
+      summary: Добавить кастомный бренд (admin)
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Brand" }
+      responses:
+        "201": { description: создан }
+  /v1/lists/{kind}:
+    parameters: [{ name: kind, in: path, required: true, schema: { type: string, enum: [allow, block] } }]
+    get:
+      summary: Allow/block-список
+      responses:
+        "200": { description: OK }
+    post:
+      summary: Добавить запись
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [value]
+              properties:
+                value: { type: string, example: "partner.kz" }
+                note: { type: string }
+      responses:
+        "201": { description: создано }
+  /v1/lists/{kind}/{value}:
+    delete:
+      summary: Удалить запись
+      parameters:
+        - { name: kind, in: path, required: true, schema: { type: string, enum: [allow, block] } }
+        - { name: value, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: удалено }
+  /v1/stats:
+    get:
+      summary: Статистика (analyst/admin)
+      parameters: [{ name: since, in: query, schema: { type: string, example: "30d" } }]
+      responses:
+        "200": { description: OK }
+  /v1/signals:
+    get:
+      security: []
+      summary: Зарегистрированные сигналы и веса
+      responses:
+        "200": { description: OK }
+  /v1/demos:
+    get:
+      security: []
+      summary: Встроенные демо-примеры
+      responses:
+        "200": { description: OK }
+  /v1/webhooks:
+    get:
+      summary: Webhook-подписки (TODO)
+      responses:
+        "501": { $ref: "#/components/responses/Error" }
+components:
+  securitySchemes:
+    ApiKey: { type: apiKey, in: header, name: X-API-Key }
+    Bearer: { type: http, scheme: bearer }
+  responses:
+    Error:
+      description: Ошибка
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+              message: { type: string }
+  schemas:
+    AnalyzeRequest:
+      type: object
+      properties:
+        text: { type: string }
+        eml_base64: { type: string }
+        image_base64: { type: string }
+        lang: { type: string, enum: [ru, en, kz] }
+        no_llm: { type: boolean }
+        submitted_by: { type: string }
+        channel: { type: string, enum: [web, api, outlook, gmail, imap, telegram] }
+    Signal:
+      type: object
+      properties:
+        id: { type: string, example: header.replyto_mismatch }
+        category: { type: string }
+        weight: { type: integer }
+        confidence: { type: number }
+        evidence: { type: string }
+        explanation: { type: string }
+        source: { type: string, enum: [heuristic, dns, ti, llm] }
+    Analysis:
+      type: object
+      properties:
+        score: { type: integer, minimum: 0, maximum: 100 }
+        verdict: { type: string, enum: [phishing, suspicious, clean, needs_review] }
+        confidence: { type: number }
+        attack_type: { type: string }
+        signals: { type: array, items: { $ref: "#/components/schemas/Signal" } }
+        brand:
+          type: object
+          properties:
+            name: { type: string }
+            method: { type: string }
+            score: { type: number }
+            official: { type: boolean }
+        llm:
+          type: object
+          description: Помечено ai_generated=true; совещательное мнение
+        recommendations: { type: array, items: { type: string } }
+        warnings: { type: array, items: { type: string } }
+        duration_ms: { type: integer }
+    AnalyzeResponse:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string }
+        channel: { type: string }
+        kind: { type: string }
+        received_at: { type: string, format: date-time }
+        message:
+          type: object
+          properties:
+            from: { type: string }
+            reply_to: { type: string }
+            subject: { type: string }
+            language: { type: string }
+            links: { type: array, items: { type: object } }
+            attachments: { type: array, items: { type: object } }
+            auth_results: { type: object }
+        result: { $ref: "#/components/schemas/Analysis" }
+    Brand:
+      type: object
+      required: [name, domains]
+      properties:
+        name: { type: string }
+        domains: { type: array, items: { type: string } }
+        esp_domains: { type: array, items: { type: string } }
+        keywords: { type: array, items: { type: string } }
+        locale: { type: string }

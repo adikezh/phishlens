@@ -1,0 +1,433 @@
+package httpapi
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"io"
+	"mime"
+	"net/http"
+	"path"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/phishlens/phishlens/internal/app"
+	"github.com/phishlens/phishlens/internal/brands"
+	"github.com/phishlens/phishlens/internal/config"
+	"github.com/phishlens/phishlens/internal/domain"
+	"github.com/phishlens/phishlens/internal/parse"
+	"github.com/phishlens/phishlens/internal/store"
+)
+
+// analyzeJSON is the JSON body of POST /v1/analyze (F-4.1.2).
+type analyzeJSON struct {
+	Text        string `json:"text"`
+	EMLBase64   string `json:"eml_base64"`
+	ImageBase64 string `json:"image_base64"`
+	Lang        string `json:"lang"`
+	NoLLM       bool   `json:"no_llm"`
+	SubmittedBy string `json:"submitted_by"`
+	Channel     string `json:"channel"`
+}
+
+// AnalyzeResponse is returned by POST /v1/analyze and GET /v1/analyses/{id}.
+type AnalyzeResponse struct {
+	ID         string           `json:"id"`
+	Status     domain.Status    `json:"status"`
+	Channel    domain.Channel   `json:"channel"`
+	Kind       domain.Kind      `json:"kind"`
+	ReceivedAt time.Time        `json:"received_at"`
+	Message    *MessageSummary  `json:"message,omitempty"`
+	Result     *domain.Analysis `json:"result,omitempty"`
+}
+
+// MessageSummary is the privacy-safe projection of ParsedMail.
+type MessageSummary struct {
+	From        string              `json:"from,omitempty"`
+	ReplyTo     string              `json:"reply_to,omitempty"`
+	Subject     string              `json:"subject,omitempty"`
+	Date        string              `json:"date,omitempty"`
+	Language    string              `json:"language,omitempty"`
+	Links       []domain.Link       `json:"links,omitempty"`
+	Attachments []domain.Attachment `json:"attachments,omitempty"`
+	AuthResults domain.AuthResults  `json:"auth_results"`
+}
+
+func toResponse(sub *domain.Submission) AnalyzeResponse {
+	resp := AnalyzeResponse{ID: sub.ID, Status: sub.Status, Channel: sub.Channel, Kind: sub.Kind, ReceivedAt: sub.ReceivedAt, Result: sub.Result}
+	if m := sub.Message; m != nil {
+		ms := &MessageSummary{From: m.From.String(), ReplyTo: m.ReplyTo.String(), Subject: m.Subject, Language: m.Language,
+			Links: m.Links, Attachments: m.Attachments, AuthResults: m.AuthResults}
+		if !m.Date.IsZero() {
+			ms.Date = m.Date.Format(time.RFC3339)
+		}
+		resp.Message = ms
+	}
+	return resp
+}
+
+// DetectKind picks the input kind from a filename / content type / sniffing.
+func DetectKind(filename, contentType string, data []byte) (domain.Kind, error) {
+	ext := strings.ToLower(path.Ext(filename))
+	ct := strings.ToLower(contentType)
+	switch {
+	case ext == ".eml" || strings.Contains(ct, "message/rfc822"):
+		return domain.KindEML, nil
+	case ext == ".msg" || strings.Contains(ct, "vnd.ms-outlook"):
+		return domain.KindMSG, nil
+	case ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif" || strings.HasPrefix(ct, "image/"):
+		return domain.KindImage, nil
+	case ext == ".pdf" || strings.Contains(ct, "application/pdf"):
+		return "", errors.New("pdf screenshots are not supported yet (TODO F-4.1.1)")
+	case ext == ".txt" || strings.HasPrefix(ct, "text/"):
+		return domain.KindText, nil
+	}
+	sniff := http.DetectContentType(data)
+	switch {
+	case strings.HasPrefix(sniff, "image/"):
+		return domain.KindImage, nil
+	case len(data) >= 8 && data[0] == 0xD0 && data[1] == 0xCF:
+		return domain.KindMSG, nil
+	default:
+		return domain.KindEML, nil
+	}
+}
+
+func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
+	maxBytes := int64(s.app.Cfg.Server.MaxUploadMB) << 20
+	r.Body = http.MaxBytesReader(w, r.Body, maxBytes+4096)
+	p := PrincipalFrom(r.Context())
+	req := app.Request{Channel: domain.ChannelAPI, OrgID: p.OrgID}
+
+	ct, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	switch {
+	case strings.HasPrefix(ct, "multipart/"):
+		if err := r.ParseMultipartForm(maxBytes); err != nil {
+			writeError(w, http.StatusRequestEntityTooLarge, "too_large", err.Error())
+			return
+		}
+		req.Lang = r.FormValue("lang")
+		req.NoLLM = r.FormValue("no_llm") == "true" || r.FormValue("no_llm") == "1"
+		req.SubmittedBy = r.FormValue("submitted_by")
+		if ch := r.FormValue("channel"); ch != "" {
+			req.Channel = domain.Channel(ch)
+		}
+		if f, hdr, err := r.FormFile("file"); err == nil {
+			defer f.Close()
+			data, err := io.ReadAll(io.LimitReader(f, maxBytes+1))
+			if err != nil || int64(len(data)) > maxBytes {
+				writeError(w, http.StatusRequestEntityTooLarge, "too_large", "file exceeds max_upload_mb")
+				return
+			}
+			kind, err := DetectKind(hdr.Filename, hdr.Header.Get("Content-Type"), data)
+			if err != nil {
+				writeError(w, http.StatusUnsupportedMediaType, "unsupported", err.Error())
+				return
+			}
+			req.Kind, req.Data = kind, data
+		} else if t := r.FormValue("text"); strings.TrimSpace(t) != "" {
+			req.Kind, req.Data = domain.KindText, []byte(t)
+		} else if d := r.FormValue("demo"); d != "" {
+			b, ok := app.DemoBytes(d)
+			if !ok {
+				writeError(w, http.StatusNotFound, "not_found", "unknown demo")
+				return
+			}
+			req.Kind, req.Data = domain.KindEML, b
+		}
+	default:
+		var body analyzeJSON
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			writeError(w, http.StatusBadRequest, "bad_request", "invalid JSON: "+err.Error())
+			return
+		}
+		req.Lang, req.NoLLM, req.SubmittedBy = body.Lang, body.NoLLM, body.SubmittedBy
+		if body.Channel != "" {
+			req.Channel = domain.Channel(body.Channel)
+		}
+		switch {
+		case body.EMLBase64 != "":
+			data, err := base64.StdEncoding.DecodeString(body.EMLBase64)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "bad_request", "eml_base64 is not valid base64")
+				return
+			}
+			req.Kind, req.Data = domain.KindEML, data
+		case body.ImageBase64 != "":
+			data, err := base64.StdEncoding.DecodeString(body.ImageBase64)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "bad_request", "image_base64 is not valid base64")
+				return
+			}
+			req.Kind, req.Data = domain.KindImage, data
+		case strings.TrimSpace(body.Text) != "":
+			req.Kind, req.Data = domain.KindText, []byte(body.Text)
+		}
+	}
+	if len(req.Data) == 0 {
+		writeError(w, http.StatusBadRequest, "bad_request", "provide text, eml_base64, image_base64 or a multipart file")
+		return
+	}
+	sub, err := s.app.Analyzer.Analyze(r.Context(), req)
+	if err != nil {
+		switch {
+		case errors.Is(err, parse.ErrNotImplemented):
+			writeError(w, http.StatusNotImplemented, "not_implemented", err.Error())
+		case errors.Is(err, parse.ErrTooLarge):
+			writeError(w, http.StatusRequestEntityTooLarge, "too_large", err.Error())
+		case errors.Is(err, parse.ErrEmpty):
+			writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		default:
+			writeError(w, http.StatusUnprocessableEntity, "parse_error", err.Error())
+		}
+		return
+	}
+	// TODO(F-4.1.2): if analysis exceeds the sync budget return 202 + Location: /v1/analyses/{id}.
+	writeJSON(w, http.StatusOK, toResponse(sub))
+}
+
+func (s *Server) handleGetAnalysis(w http.ResponseWriter, r *http.Request) {
+	if s.app.Store == nil {
+		writeError(w, http.StatusNotFound, "not_found", "storage disabled")
+		return
+	}
+	sub, err := s.app.Store.GetSubmission(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "analysis not found")
+			return
+		}
+		s.log.Error().Err(err).Msg("get submission")
+		writeError(w, http.StatusInternalServerError, "internal", "storage error")
+		return
+	}
+	p := PrincipalFrom(r.Context())
+	if p.OrgID != "" && sub.OrgID != p.OrgID {
+		writeError(w, http.StatusNotFound, "not_found", "analysis not found")
+		return
+	}
+	writeJSON(w, http.StatusOK, toResponse(sub))
+}
+
+func (s *Server) handleListSubmissions(w http.ResponseWriter, r *http.Request) {
+	if s.app.Store == nil {
+		writeJSON(w, http.StatusOK, []any{})
+		return
+	}
+	q := r.URL.Query()
+	f := store.SubmissionFilter{OrgID: PrincipalFrom(r.Context()).OrgID, Verdict: domain.Verdict(q.Get("verdict")), Status: domain.Status(q.Get("status"))}
+	f.Limit, _ = strconv.Atoi(q.Get("limit"))
+	f.Offset, _ = strconv.Atoi(q.Get("offset"))
+	if since := q.Get("since"); since != "" {
+		if d, err := config.ParseDuration(since); err == nil {
+			f.Since = time.Now().Add(-d)
+		}
+	}
+	subs, err := s.app.Store.ListSubmissions(r.Context(), f)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	out := make([]AnalyzeResponse, 0, len(subs))
+	for _, sub := range subs {
+		out = append(out, toResponse(sub))
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+func (s *Server) handleReview(w http.ResponseWriter, r *http.Request) {
+	if s.app.Store == nil {
+		writeError(w, http.StatusNotFound, "not_found", "storage disabled")
+		return
+	}
+	var body struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "invalid JSON")
+		return
+	}
+	st := domain.Status(body.Status)
+	switch st {
+	case domain.StatusInReview, domain.StatusConfirmedPhish, domain.StatusConfirmedClean, domain.StatusEscalated:
+	default:
+		writeError(w, http.StatusBadRequest, "bad_request", "invalid status")
+		return
+	}
+	p := PrincipalFrom(r.Context())
+	id := chi.URLParam(r, "id")
+	if err := s.app.Store.UpdateSubmissionStatus(r.Context(), id, st, p.Name); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "submission not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "submission.review", Target: id, Details: body.Status})
+	writeJSON(w, http.StatusOK, map[string]string{"id": id, "status": body.Status})
+}
+
+func (s *Server) handleDeleteSubmission(w http.ResponseWriter, r *http.Request) {
+	if s.app.Store == nil {
+		writeError(w, http.StatusNotFound, "not_found", "storage disabled")
+		return
+	}
+	id := chi.URLParam(r, "id")
+	if err := s.app.Store.DeleteSubmission(r.Context(), id); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "submission not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	p := PrincipalFrom(r.Context())
+	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "submission.delete", Target: id})
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) handleListBrands(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.app.Brands.Brands())
+}
+
+func (s *Server) handleAddBrand(w http.ResponseWriter, r *http.Request) {
+	if !s.app.Cfg.Analysis.CustomBrandsEnabled {
+		writeError(w, http.StatusForbidden, "forbidden", "custom brands disabled")
+		return
+	}
+	var b brands.Brand
+	if err := json.NewDecoder(r.Body).Decode(&b); err != nil || strings.TrimSpace(b.Name) == "" || len(b.Domains) == 0 {
+		writeError(w, http.StatusBadRequest, "bad_request", "name and domains are required")
+		return
+	}
+	p := PrincipalFrom(r.Context())
+	b.OrgID = p.OrgID
+	if s.app.Store != nil {
+		if err := s.app.Store.AddBrand(r.Context(), b); err != nil {
+			writeError(w, http.StatusInternalServerError, "internal", err.Error())
+			return
+		}
+		_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "brand.add", Target: b.Name})
+	}
+	s.app.Brands.Add(b)
+	writeJSON(w, http.StatusCreated, b)
+}
+
+func listKind(r *http.Request) (store.ListKind, bool) {
+	switch chi.URLParam(r, "kind") {
+	case "allow":
+		return store.ListAllow, true
+	case "block":
+		return store.ListBlock, true
+	}
+	return "", false
+}
+
+func (s *Server) handleListEntries(w http.ResponseWriter, r *http.Request) {
+	kind, ok := listKind(r)
+	if !ok {
+		writeError(w, http.StatusNotFound, "not_found", "list kind must be allow or block")
+		return
+	}
+	if s.app.Store == nil {
+		writeJSON(w, http.StatusOK, []any{})
+		return
+	}
+	entries, err := s.app.Store.ListEntries(r.Context(), PrincipalFrom(r.Context()).OrgID, kind)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	if entries == nil {
+		entries = []store.ListEntry{}
+	}
+	writeJSON(w, http.StatusOK, entries)
+}
+
+func (s *Server) handleAddEntry(w http.ResponseWriter, r *http.Request) {
+	kind, ok := listKind(r)
+	if !ok || s.app.Store == nil {
+		writeError(w, http.StatusNotFound, "not_found", "list unavailable")
+		return
+	}
+	var body struct {
+		Value string `json:"value"`
+		Note  string `json:"note"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.Value) == "" {
+		writeError(w, http.StatusBadRequest, "bad_request", "value is required")
+		return
+	}
+	p := PrincipalFrom(r.Context())
+	e := store.ListEntry{OrgID: p.OrgID, Kind: kind, Value: body.Value, Note: body.Note, CreatedBy: p.Name}
+	if err := s.app.Store.AddEntry(r.Context(), e); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	app.InvalidateListCache()
+	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "list.add", Target: string(kind) + ":" + body.Value})
+	writeJSON(w, http.StatusCreated, e)
+}
+
+func (s *Server) handleRemoveEntry(w http.ResponseWriter, r *http.Request) {
+	kind, ok := listKind(r)
+	if !ok || s.app.Store == nil {
+		writeError(w, http.StatusNotFound, "not_found", "list unavailable")
+		return
+	}
+	p := PrincipalFrom(r.Context())
+	value := chi.URLParam(r, "value")
+	if err := s.app.Store.RemoveEntry(r.Context(), p.OrgID, kind, value); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "entry not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	app.InvalidateListCache()
+	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "list.remove", Target: string(kind) + ":" + value})
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
+	if s.app.Store == nil {
+		writeError(w, http.StatusNotFound, "not_found", "storage disabled")
+		return
+	}
+	since := time.Now().Add(-30 * 24 * time.Hour)
+	if v := r.URL.Query().Get("since"); v != "" {
+		if d, err := config.ParseDuration(v); err == nil {
+			since = time.Now().Add(-d)
+		}
+	}
+	st, err := s.app.Store.Stats(r.Context(), PrincipalFrom(r.Context()).OrgID, since)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, st)
+}
+
+func (s *Server) handleDemos(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, app.Demos())
+}
+
+// handleSignals lists registered checks with their configured weights (signals reference).
+func (s *Server) handleSignals(w http.ResponseWriter, _ *http.Request) {
+	type sig struct {
+		ID       string `json:"id"`
+		Category string `json:"category"`
+		Weight   int    `json:"weight,omitempty"`
+	}
+	weights := s.app.Score.Weights().Signals
+	var out []sig
+	for _, c := range s.app.Registry.Checks() {
+		out = append(out, sig{ID: c.ID(), Category: string(c.Category()), Weight: weights[c.ID()]})
+	}
+	writeJSON(w, http.StatusOK, out)
+}

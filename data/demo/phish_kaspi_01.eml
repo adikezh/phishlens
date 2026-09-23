@@ -1,0 +1,28 @@
+Return-Path: <bounce@kaspi-secure-login.com>
+Received: from mail.kaspi-secure-login.com (unknown [185.220.101.45])
+	by mx.company.kz (Postfix) with ESMTP id 4B7C2A1F3
+	for <a.serikova@company.kz>; Mon, 14 Sep 2026 09:12:33 +0500
+Authentication-Results: mx.company.kz;
+	spf=fail smtp.mailfrom=kaspi-secure-login.com;
+	dkim=none;
+	dmarc=fail header.from=kaspi.kz
+From: "Kaspi Bank" <security@kaspi.kz>
+Reply-To: support@kaspi-secure-login.com
+To: a.serikova@company.kz
+Subject: =?UTF-8?B?0KHRgNC+0YfQvdC+OiDQstCw0Ygg0LDQutC60LDRg9C90YIgS2FzcGkg0LHRg9C00LXRgiDQt9Cw0LHQu9C+0LrQuNGA0L7QstCw0L0=?=
+Date: Mon, 14 Sep 2026 09:12:30 +0500
+Message-ID: <20260914091230.7f3a@kaspi-secure-login.com>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+<html><body style="font-family:Arial">
+<img src="https://kaspi-secure-login.com/img/logo.png" alt="Kaspi">
+<p>Уважаемый клиент!</p>
+<p>Мы зафиксировали подозрительную операцию по вашей карте Kaspi Gold.
+Ваш аккаунт будет <b>заблокирован в течение 24 часов</b>, если вы не подтвердите данные.</p>
+<p><a href="http://kaspi-secure-login.com/verify?id=7f3a9c">https://kaspi.kz/login</a></p>
+<p>Для подтверждения введите номер карты, срок действия, CVV и код из SMS.</p>
+<p>С уважением,<br>Служба безопасности Kaspi</p>
+<span style="font-size:0px;color:#ffffff">unsubscribe newsletter weekly digest</span>
+</body></html>

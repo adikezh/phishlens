@@ -1,0 +1,254 @@
+# База брендов (ТЗ F-4.3.1). Стартовый набор; целевой объём ≥ 100 (TODO: дополнить).
+# Бесплатные почтовые домены (gmail.com, outlook.com, icloud.com) НЕ входят в domains бренда:
+# письмо с gmail.com — не «официальное письмо Google» (см. data/free_mail_domains.txt, D-05).
+# name        — отображаемое имя
+# domains     — официальные домены (письмо с них считается легитимным при SPF+DKIM+DMARC pass)
+# esp_domains — домены рассылочных платформ/партнёров, с которых бренд реально шлёт
+# keywords    — слова в теме/теле, по которым определяется имитация (без учёта регистра)
+# locale      — kz | ru | global
+# colors      — фирменные цвета (hex) для сравнения скриншотов (TODO F-4.3.2)
+# logo_phash  — pHash логотипа (TODO F-4.3.2)
+brands:
+  # ---------- Казахстан: банки и финтех ----------
+  - name: Kaspi
+    domains: [kaspi.kz, kaspi.bank, kaspibank.kz]
+    esp_domains: [mail.kaspi.kz, notify.kaspi.kz]
+    keywords: [kaspi, каспи, kaspi gold, kaspi pay, kaspi.kz, каспий банк]
+    locale: kz
+    colors: ["#F14635"]
+  - name: Halyk Bank
+    domains: [halykbank.kz, halyk.kz, homebank.kz]
+    esp_domains: [mail.halykbank.kz]
+    keywords: [halyk, халык, народный банк, homebank, хоумбанк]
+    locale: kz
+    colors: ["#00A651"]
+  - name: Jusan Bank
+    domains: [jusan.kz, jusanbank.kz]
+    keywords: [jusan, жусан, jusan bank]
+    locale: kz
+  - name: ForteBank
+    domains: [forte.kz, fortebank.com, fortebank.kz]
+    keywords: [forte, фортебанк, forte bank]
+    locale: kz
+  - name: Freedom Bank
+    domains: [freedombank.kz, ffin.kz, freedomfinance.kz, freedom24.com]
+    keywords: [freedom bank, freedom finance, фридом финанс, freedom24]
+    locale: kz
+  - name: Bank CenterCredit
+    domains: [bcc.kz]
+    keywords: [centercredit, центркредит, bcc.kz, банк центркредит]
+    locale: kz
+  - name: Eurasian Bank
+    domains: [eubank.kz]
+    keywords: [eurasian bank, евразийский банк]
+    locale: kz
+  - name: Bereke Bank
+    domains: [berekebank.kz]
+    keywords: [bereke, береке банк]
+    locale: kz
+  - name: Otbasy Bank
+    domains: [hcsbk.kz, otbasybank.kz]
+    keywords: [otbasy, отбасы банк, жилстройсбербанк]
+    locale: kz
+  - name: RBK Bank
+    domains: [bankrbk.kz]
+    keywords: [bank rbk, банк rbk]
+    locale: kz
+  - name: Altyn Bank
+    domains: [altynbank.kz]
+    keywords: [altyn bank, алтын банк]
+    locale: kz
+  - name: Nurbank
+    domains: [nurbank.kz]
+    keywords: [nurbank, нурбанк]
+    locale: kz
+  - name: Home Credit Kazakhstan
+    domains: [homecredit.kz]
+    keywords: [home credit, хоум кредит]
+    locale: kz
+  - name: Kazakhstan Stock Exchange
+    domains: [kase.kz]
+    keywords: [kase, казахстанская фондовая биржа]
+    locale: kz
+  - name: National Bank of Kazakhstan
+    domains: [nationalbank.kz]
+    keywords: [национальный банк, нацбанк, national bank of kazakhstan, ұлттық банк]
+    locale: kz
+
+  # ---------- Казахстан: госуслуги ----------
+  - name: eGov
+    domains: [egov.kz, mgov.kz, elicense.kz]
+    keywords: [egov, egov.kz, электронное правительство, электрондық үкімет, egov mobile]
+    locale: kz
+    colors: ["#0A6EBD"]
+  - name: ЦОН (Government for Citizens)
+    domains: [gov4c.kz]
+    keywords: [цон, gov4c, государственная корпорация, правительство для граждан, халыққа қызмет көрсету орталығы]
+    locale: kz
+  - name: Комитет государственных доходов
+    domains: [kgd.gov.kz, salyk.kz, cabinet.salyk.kz]
+    keywords: [кгд, комитет государственных доходов, налоговая, salyk, салық, cabinet.salyk]
+    locale: kz
+  - name: ЕНПФ
+    domains: [enpf.kz]
+    keywords: [енпф, enpf, пенсионный фонд, зейнетақы қоры]
+    locale: kz
+  - name: Госкорпорация Правительство для граждан
+    domains: [gov.kz]
+    keywords: [gov.kz, министерство, акимат]
+    locale: kz
+  - name: Казпочта
+    domains: [post.kz, kazpost.kz]
+    keywords: [казпочта, kazpost, қазпошта, post.kz]
+    locale: kz
+  - name: Сбербанк Казахстан
+    domains: [sberbank.kz]
+    keywords: [сбербанк казахстан]
+    locale: kz
+
+  # ---------- Казахстан: операторы, маркетплейсы, сервисы ----------
+  - name: Beeline Kazakhstan
+    domains: [beeline.kz]
+    keywords: [beeline, билайн]
+    locale: kz
+    colors: ["#FFCC00"]
+  - name: Kcell
+    domains: [kcell.kz, activ.kz]
+    keywords: [kcell, кселл, activ, актив]
+    locale: kz
+  - name: Tele2 Kazakhstan
+    domains: [tele2.kz, altel.kz]
+    keywords: [tele2, теле2, altel, алтел]
+    locale: kz
+  - name: Kazakhtelecom
+    domains: [telecom.kz, kazakhtelecom.kz]
+    keywords: [казахтелеком, kazakhtelecom, telecom.kz]
+    locale: kz
+  - name: OLX Kazakhstan
+    domains: [olx.kz, olx.com]
+    keywords: [olx, олх, olx доставка]
+    locale: kz
+  - name: Kolesa
+    domains: [kolesa.kz, krisha.kz, market.kz]
+    keywords: [kolesa, колеса, krisha, крыша]
+    locale: kz
+  - name: Air Astana
+    domains: [airastana.com, flyarystan.com]
+    keywords: [air astana, эйр астана, flyarystan]
+    locale: kz
+  - name: Chocofamily
+    domains: [chocofamily.kz, rakhmet.kz, chocotravel.com]
+    keywords: [chocofamily, rakhmet, рахмет, chocotravel]
+    locale: kz
+  - name: Magnum
+    domains: [magnum.kz]
+    keywords: [magnum, магнум]
+    locale: kz
+  - name: Wildberries
+    domains: [wildberries.kz, wildberries.ru, wb.ru]
+    keywords: [wildberries, вайлдберриз]
+    locale: ru
+  - name: Ozon
+    domains: [ozon.kz, ozon.ru]
+    keywords: [ozon, озон]
+    locale: ru
+  - name: Yandex
+    domains: [yandex.kz, yandex.ru, yandex.com, ya.ru, yango.com]
+    keywords: [яндекс, yandex, yango, яндекс go]
+    locale: ru
+  - name: inDrive
+    domains: [indrive.com, indriver.com]
+    keywords: [indrive, indriver, индрайв]
+    locale: kz
+  - name: CDEK
+    domains: [cdek.kz, cdek.ru]
+    keywords: [cdek, сдэк]
+    locale: ru
+  - name: Kazakhstan Temir Zholy
+    domains: [ktzh.kz, bilet.railways.kz, railways.kz]
+    keywords: [ктж, ktzh, темир жолы, temir zholy]
+    locale: kz
+
+  # ---------- Глобальные ----------
+  - name: Microsoft
+    domains: [microsoft.com, office.com, microsoftonline.com, sharepoint.com, onedrive.com, office365.com, azure.com]
+    esp_domains: [email.microsoft.com, microsoft-noreply.com]
+    keywords: [microsoft, office 365, office365, outlook, onedrive, sharepoint, teams, майкрософт]
+    locale: global
+    colors: ["#0078D4"]
+  - name: Google
+    domains: [google.com, youtube.com, google.kz, google.ru]
+    keywords: [google, gmail, google drive, google docs, гугл]
+    locale: global
+  - name: Apple
+    domains: [apple.com]
+    keywords: [apple, icloud, apple id, app store]
+    locale: global
+  - name: Amazon
+    domains: [amazon.com, amazon.de, amazon.co.uk, aws.amazon.com]
+    keywords: [amazon, aws, amazon prime]
+    locale: global
+  - name: PayPal
+    domains: [paypal.com, paypal.me]
+    keywords: [paypal]
+    locale: global
+  - name: DHL
+    domains: [dhl.com, dhl.kz, dhl.de]
+    keywords: [dhl]
+    locale: global
+  - name: FedEx
+    domains: [fedex.com]
+    keywords: [fedex]
+    locale: global
+  - name: UPS
+    domains: [ups.com]
+    keywords: [ups delivery, ups parcel]
+    locale: global
+  - name: Meta
+    domains: [facebook.com, facebookmail.com, instagram.com, whatsapp.com, meta.com]
+    keywords: [facebook, instagram, whatsapp, meta]
+    locale: global
+  - name: Telegram
+    domains: [telegram.org, t.me]
+    keywords: [telegram, телеграм]
+    locale: global
+  - name: Netflix
+    domains: [netflix.com]
+    keywords: [netflix]
+    locale: global
+  - name: LinkedIn
+    domains: [linkedin.com]
+    keywords: [linkedin]
+    locale: global
+  - name: Dropbox
+    domains: [dropbox.com, dropboxmail.com]
+    keywords: [dropbox]
+    locale: global
+  - name: DocuSign
+    domains: [docusign.com, docusign.net]
+    keywords: [docusign]
+    locale: global
+  - name: Zoom
+    domains: [zoom.us, zoom.com]
+    keywords: [zoom]
+    locale: global
+  - name: Adobe
+    domains: [adobe.com, adobesign.com]
+    keywords: [adobe, acrobat sign]
+    locale: global
+  - name: Visa
+    domains: [visa.com]
+    keywords: [visa]
+    locale: global
+  - name: Mastercard
+    domains: [mastercard.com]
+    keywords: [mastercard]
+    locale: global
+  - name: Binance
+    domains: [binance.com]
+    keywords: [binance, бинанс]
+    locale: global
+  - name: Steam
+    domains: [steampowered.com, steamcommunity.com]
+    keywords: [steam]
+    locale: global

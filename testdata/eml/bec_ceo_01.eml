@@ -1,0 +1,28 @@
+Return-Path: <a.nurlanov.ceo@gmail.com>
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com [209.85.220.41])
+	by mx.company.kz (Postfix) with ESMTPS id 91A3E2B7C
+	for <buhgalter@company.kz>; Tue, 15 Sep 2026 14:02:11 +0500
+Authentication-Results: mx.company.kz;
+	spf=pass smtp.mailfrom=gmail.com;
+	dkim=pass header.d=gmail.com;
+	dmarc=pass header.from=gmail.com
+From: "Аскар Нурланов (Генеральный директор)" <a.nurlanov.ceo@gmail.com>
+Reply-To: a.nurlanov.ceo@gmail.com
+To: buhgalter@company.kz
+Subject: Срочная задача
+Date: Tue, 15 Sep 2026 14:02:05 +0500
+Message-ID: <CAF3kx9=7Zq@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Добрый день, Гульнара.
+
+Я сейчас на встрече с инвесторами и не могу говорить. Нужно срочно оплатить
+счёт нового поставщика сегодня до 17:00, иначе сорвётся контракт.
+Новые реквизиты пришлю следующим письмом. Подтверди, как сделаешь.
+Никому не сообщай — это конфиденциально до подписания.
+
+Аскар Нурланов
+Генеральный директор
+Отправлено с iPhone

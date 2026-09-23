@@ -1,0 +1,78 @@
+# PhishLens — полный пример конфигурации (ТЗ §8).
+# Любой ключ переопределяется переменной окружения с префиксом PL_ и "_" вместо ".":
+#   PL_SERVER_LISTEN=":9000"  PL_LLM_ENABLED=false  PL_STORAGE_DSN="..."
+
+server:
+  listen: ":8082"
+  base_url: "http://localhost:8082"
+  max_upload_mb: 25
+  rate_limit_rps: 5          # на ключ / IP; burst = rps*4
+
+storage:
+  driver: sqlite             # sqlite | postgres (TODO)
+  dsn: "file:data/phishlens.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
+  store_bodies: false        # Community default: тела писем не хранятся
+  encryption_key_env: PL_ENC_KEY
+  retention:
+    submissions: 90d
+
+analysis:
+  language: ru               # ru | en | kz — язык объяснений по умолчанию
+  timeout: 10s
+  thresholds: { phishing: 70, suspicious: 40 }
+  weights_file: data/weights.yaml
+  brands_file: data/brands.yaml
+  data_dir: data             # словари, shorteners, risky_tlds, homoglyphs (fallback — встроенные)
+  prompts_dir: prompts
+  custom_brands_enabled: true
+
+auth_checks:
+  own_spf_dkim_dmarc: true   # если нет Authentication-Results — собственная проверка (TODO H-04)
+  dns_resolver: "1.1.1.1:53"
+
+reputation:
+  rdap: { enabled: true, cache_ttl: 168h }
+  dnsbl: ["zen.spamhaus.org"]
+  urlhaus: { enabled: true }
+  openphish: { enabled: true }
+  safebrowsing: { enabled: false, api_key_env: GSB_KEY }
+  abuseipdb: { enabled: false, key_env: ABUSEIPDB_KEY }
+  virustotal: { enabled: false, key_env: VT_KEY, attachments_only: true }
+  link_expansion: { enabled: true, max_redirects: 5, timeout: 4s }
+  timeout: 3s                # общий бюджет стадии репутации
+
+ocr:
+  mode: off                  # tesseract | vision_llm | off
+  tesseract_url: "http://ocr:8090"
+
+llm:
+  enabled: false             # включите и задайте ключ провайдера
+  redact_pii: true
+  timeout: 8s
+  cache_ttl: 24h
+  providers:
+    - { name: cloud, type: openai_compatible, base_url: "https://openrouter.ai/api/v1", model: "anthropic/claude-haiku", api_key_env: OPENROUTER_KEY }
+    - { name: anthropic, type: anthropic, model: "claude-opus-5", api_key_env: ANTHROPIC_API_KEY }
+    - { name: local, type: ollama, base_url: "http://ollama:11434", model: "qwen2.5:14b", vision_model: "qwen2-vl:7b" }
+  budget: { usd_per_day: 3.0, calls_per_hour: 300 }
+
+sandbox: { enabled: false, url: "http://sandbox:9222", screenshot: true }
+
+ingest:
+  imap: { enabled: false, host: "", user: "", password_env: IMAP_PASS, folder: "INBOX", reply_with_verdict: true }
+  graph: { enabled: false, tenant_id: "", client_id: "", client_secret_env: GRAPH_SECRET, mailbox: "phish@company.kz" }
+  telegram: { enabled: false, token_env: TG_TOKEN }
+
+integrations:
+  wazuh: { enabled: false, api_url: "", user: "", password_env: WAZUH_PASS, min_verdict: suspicious }
+  webhook: { enabled: false, url: "", secret_env: WEBHOOK_SECRET }
+  thehive: { enabled: false }
+
+auth:
+  anonymous_analyze: true    # для демо; в проде false
+  api_keys_enabled: true
+  oidc: { enabled: false, issuer: "", client_id: "", client_secret_env: OIDC_SECRET, redirect_url: "" }
+
+log:
+  level: info                # debug | info | warn | error
+  pretty: true               # человекочитаемый вывод; false — JSON (zerolog)

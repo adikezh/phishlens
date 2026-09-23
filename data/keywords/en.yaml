@@ -1,0 +1,56 @@
+urgency:
+  - urgent
+  - immediately
+  - within 24 hours
+  - within 12 hours
+  - act now
+  - final notice
+  - last warning
+  - expires
+  - asap
+  - right away
+threat:
+  - suspended
+  - blocked
+  - locked
+  - will be deleted
+  - unauthorized
+  - unusual activity
+  - suspicious activity
+  - violation
+  - penalty
+  - legal action
+finance:
+  - wire
+  - transfer
+  - payment
+  - invoice
+  - bank details
+  - refund
+  - payout
+  - outstanding balance
+  - overdue
+credential:
+  - password
+  - verify your account
+  - confirm your identity
+  - one-time code
+  - otp
+  - cvv
+  - card number
+  - expiration date
+  - sign in to
+  - update your details
+  - re-enter
+bec:
+  - can't talk
+  - cannot talk
+  - in a meeting
+  - keep this confidential
+  - don't tell anyone
+  - gift card
+  - wire transfer today
+  - new vendor
+  - new bank details
+  - changed our bank
+  - updated banking

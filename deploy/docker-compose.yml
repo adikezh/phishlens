@@ -1,0 +1,39 @@
+# docker compose up → демо на http://localhost:8082 с тремя примерами.
+# LLM: раскомментируйте ollama или задайте OPENROUTER_KEY / ANTHROPIC_API_KEY и включите llm.enabled.
+services:
+  phishlens:
+    build: ..
+    image: ghcr.io/phishlens/phishlens:latest
+    ports: ["8082:8082"]
+    environment:
+      PL_STORAGE_DSN: "file:/app/var/phishlens.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
+      PL_LOG_PRETTY: "false"
+      # PL_LLM_ENABLED: "true"
+      # OPENROUTER_KEY: ${OPENROUTER_KEY}
+      # ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # PL_ENC_KEY: ${PL_ENC_KEY}          # phishlens keygen
+    volumes:
+      - phishlens-data:/app/var
+    read_only: true
+    tmpfs: ["/tmp"]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "/app/phishlens", "version"]
+      interval: 30s
+
+  # ollama:
+  #   image: ollama/ollama
+  #   volumes: ["ollama:/root/.ollama"]
+  #   # docker compose exec ollama ollama pull qwen2.5:14b
+
+  # ocr:                                   # deploy/ocr — tesseract (ru/en/kaz) HTTP-обёртка
+  #   build: ./ocr
+  #   ports: ["8090:8090"]
+
+  # sandbox:                               # deploy/sandbox — headless Chromium (Business)
+  #   build: ./sandbox
+  #   network_mode: none
+
+volumes:
+  phishlens-data:
+  # ollama:

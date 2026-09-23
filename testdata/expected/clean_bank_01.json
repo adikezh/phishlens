@@ -1,0 +1,5 @@
+{
+  "verdict": "clean",
+  "max_score": 20,
+  "signals": ["auth.aligned_official"]
+}
