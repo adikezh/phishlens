@@ -114,13 +114,14 @@ func listZip(content []byte, maxNames int) (names []string, encrypted bool) {
 	return names, encrypted
 }
 
-// listRAR lists RAR4 file headers without invoking a decompressor. RAR5 is
-// intentionally left as an opaque archive: decoding untrusted RAR data is not
-// part of metadata-only analysis, and the parser must not allocate attacker
-// controlled dictionaries. The caller still retains the archive metadata and
-// can raise an archive signal when a name is available.
+// listRAR lists RAR4 and RAR5 file headers without invoking a decompressor.
+// RAR5 parsing is limited to bounded metadata headers; compressed data and
+// attacker-controlled dictionaries are never opened.
 func listRAR(content []byte, maxNames int) (names []string, encrypted bool) {
 	const rar4SignatureLen = 7
+	if len(content) >= 8 && bytes.Equal(content[:8], []byte{'R', 'a', 'r', '!', 0x1a, 0x07, 0x01, 0x00}) {
+		return listRAR5(content, maxNames)
+	}
 	if len(content) < rar4SignatureLen || !bytes.Equal(content[:rar4SignatureLen], []byte{'R', 'a', 'r', '!', 0x1a, 0x07, 0x00}) {
 		return nil, false
 	}
@@ -178,6 +179,166 @@ func listRAR(content []byte, maxNames int) (names []string, encrypted bool) {
 		offset += size
 	}
 	return names, encrypted
+}
+
+const (
+	rar5SignatureLen = 8
+	rar5HeaderMax    = 2 << 20
+	rar5FlagExtra    = 0x0001
+	rar5FlagData     = 0x0002
+	rar5FileHeader   = 2
+	rar5Encryption   = 4
+	rar5EndHeader    = 5
+	rar5FileDir      = 0x0001
+	rar5FileTime     = 0x0002
+	rar5FileCRC      = 0x0004
+)
+
+// listRAR5 reads only the RAR5 generic and file header fields. The format's
+// header size is bounded to the specification's current 2 MiB maximum, and
+// every variable integer is limited to ten bytes / uint64.
+func listRAR5(content []byte, maxNames int) (names []string, encrypted bool) {
+	if maxNames <= 0 || len(content) < rar5SignatureLen ||
+		!bytes.Equal(content[:rar5SignatureLen], []byte{'R', 'a', 'r', '!', 0x1a, 0x07, 0x01, 0x00}) {
+		return nil, false
+	}
+	for offset := rar5SignatureLen; offset+5 <= len(content) && len(names) < maxNames; {
+		// Four bytes CRC precede the VInt header size. CRC is intentionally not
+		// trusted for parsing; bounds checks below are the security boundary.
+		headerStart := offset + 4
+		headerSize, n, ok := readRAR5VInt(content[headerStart:])
+		if !ok || headerSize > rar5HeaderMax {
+			return names, encrypted
+		}
+		bodyStart := headerStart + n
+		headerEnd := bodyStart + int(headerSize)
+		if headerEnd < bodyStart || headerEnd > len(content) {
+			return names, encrypted
+		}
+		cursor := bodyStart
+		headerType, used, ok := readRAR5VInt(content[cursor:headerEnd])
+		if !ok {
+			return names, encrypted
+		}
+		cursor += used
+		headerFlags, used, ok := readRAR5VInt(content[cursor:headerEnd])
+		if !ok {
+			return names, encrypted
+		}
+		cursor += used
+		var extraSize, dataSize uint64
+		if headerFlags&rar5FlagExtra != 0 {
+			extraSize, used, ok = readRAR5VInt(content[cursor:headerEnd])
+			if !ok {
+				return names, encrypted
+			}
+			cursor += used
+		}
+		if headerFlags&rar5FlagData != 0 {
+			dataSize, used, ok = readRAR5VInt(content[cursor:headerEnd])
+			if !ok {
+				return names, encrypted
+			}
+			cursor += used
+		}
+		if headerType == rar5Encryption {
+			return names, true
+		}
+		if headerType == rar5FileHeader {
+			fileFlags, next, ok := readRAR5VInt(content[cursor:headerEnd])
+			if !ok {
+				return names, encrypted
+			}
+			cursor += next
+			if _, next, ok = readRAR5VInt(content[cursor:headerEnd]); !ok { // unpacked size
+				return names, encrypted
+			}
+			cursor += next
+			if _, next, ok = readRAR5VInt(content[cursor:headerEnd]); !ok { // attributes
+				return names, encrypted
+			}
+			cursor += next
+			if fileFlags&rar5FileTime != 0 {
+				if cursor+4 > headerEnd {
+					return names, encrypted
+				}
+				cursor += 4
+			}
+			if fileFlags&rar5FileCRC != 0 {
+				if cursor+4 > headerEnd {
+					return names, encrypted
+				}
+				cursor += 4
+			}
+			if _, next, ok = readRAR5VInt(content[cursor:headerEnd]); !ok { // compression
+				return names, encrypted
+			}
+			cursor += next
+			if _, next, ok = readRAR5VInt(content[cursor:headerEnd]); !ok { // host OS
+				return names, encrypted
+			}
+			cursor += next
+			nameLen, next, ok := readRAR5VInt(content[cursor:headerEnd])
+			if !ok {
+				return names, encrypted
+			}
+			cursor += next
+			if nameLen > uint64(headerEnd-cursor) {
+				return names, encrypted
+			}
+			if fileFlags&rar5FileDir == 0 && nameLen > 0 {
+				names = append(names, string(content[cursor:cursor+int(nameLen)]))
+			}
+			cursor += int(nameLen)
+		}
+		if extraSize > uint64(headerEnd-cursor) {
+			return names, encrypted
+		}
+		extraStart := headerEnd - int(extraSize)
+		if extraSize > 0 {
+			for p := extraStart; p < headerEnd; {
+				recordSize, used, ok := readRAR5VInt(content[p:headerEnd])
+				if !ok || recordSize < 1 || recordSize > uint64(headerEnd-p-used) {
+					return names, encrypted
+				}
+				recordStart := p + used
+				recordType, _, ok := readRAR5VInt(content[recordStart : recordStart+int(recordSize)])
+				if !ok {
+					return names, encrypted
+				}
+				if recordType == 1 { // file encryption record
+					encrypted = true
+				}
+				p = recordStart + int(recordSize)
+			}
+		}
+		if headerType == rar5EndHeader {
+			return names, encrypted
+		}
+		if headerFlags&rar5FlagData != 0 {
+			if dataSize > uint64(len(content)-headerEnd) {
+				return names, encrypted
+			}
+			offset = headerEnd + int(dataSize)
+		} else {
+			offset = headerEnd
+		}
+	}
+	return names, encrypted
+}
+
+func readRAR5VInt(data []byte) (uint64, int, bool) {
+	var value uint64
+	for i, b := range data {
+		if i >= 10 || (i == 9 && b > 1) {
+			return 0, 0, false
+		}
+		value |= uint64(b&0x7f) << (7 * i)
+		if b&0x80 == 0 {
+			return value, i + 1, true
+		}
+	}
+	return 0, 0, false
 }
 
 // list7z lists 7-Zip headers. Opening one entry is only a one-byte probe used

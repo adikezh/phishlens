@@ -60,6 +60,60 @@ func TestListRARRejectsInvalidInputWithoutPanic(t *testing.T) {
 	}
 }
 
+func TestListRAR5ReadsHeadersWithoutDecompression(t *testing.T) {
+	content := append([]byte{'R', 'a', 'r', '!', 0x1a, 0x07, 0x01, 0x00}, rar5TestHeader(2, 0x2, 3, []byte{
+		0, // file flags
+		0, // unpacked size
+		0, // attributes
+		0, // compression
+		0, // host OS
+		3, 'r', 'u', 'n',
+	})...)
+	content = append(content, rar5TestHeader(5, 0, 0, []byte{0})...)
+	names, encrypted := listRAR(content, 10)
+	if len(names) != 1 || names[0] != "run" || encrypted {
+		t.Fatalf("RAR5 result = %#v, %v; want [run], false", names, encrypted)
+	}
+}
+
+func TestListRAR5MarksEncryptionHeader(t *testing.T) {
+	content := append([]byte{'R', 'a', 'r', '!', 0x1a, 0x07, 0x01, 0x00}, rar5TestHeader(4, 0, 0, []byte{0})...)
+	_, encrypted := listRAR(content, 10)
+	if !encrypted {
+		t.Fatal("RAR5 encryption header was not reported")
+	}
+}
+
+func rar5TestHeader(headerType, flags uint64, dataSize uint64, fields []byte) []byte {
+	body := append(rar5VInt(headerType), rar5VInt(flags)...)
+	if flags&0x2 != 0 {
+		body = append(body, rar5VInt(dataSize)...)
+	}
+	body = append(body, fields...)
+	out := []byte{0, 0, 0, 0}
+	out = append(out, rar5VInt(uint64(len(body)))...)
+	out = append(out, body...)
+	if flags&0x2 != 0 {
+		out = append(out, bytes.Repeat([]byte{0xCC}, int(dataSize))...)
+	}
+	return out
+}
+
+func rar5VInt(value uint64) []byte {
+	var out []byte
+	for {
+		b := byte(value & 0x7f)
+		value >>= 7
+		if value != 0 {
+			b |= 0x80
+		}
+		out = append(out, b)
+		if value == 0 {
+			return out
+		}
+	}
+}
+
 func TestOLEMacroProbeRejectsNonCompoundInput(t *testing.T) {
 	if oleHasVBA([]byte("not an OLE document")) {
 		t.Fatal("non-OLE input was marked as containing VBA")

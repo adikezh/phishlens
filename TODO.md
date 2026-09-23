@@ -43,10 +43,10 @@ that require external accounts, providers, or deployment-specific decisions.
   H-07 detects known bulk-mailer headers on single-recipient messages.
 - C-06 recognizes valid 12-digit Kazakhstan IIN/BIN checksums as additional
   finance-request evidence.
-- A-02 lists ZIP, RAR4, and 7z entries without extracting files; encrypted
+- A-02 lists ZIP, RAR4, RAR5, and 7z entries without extracting files; encrypted
   archives remain explicit signals and archive executable names are inspected.
-  RAR5 is intentionally opaque because safe metadata-only parsing is not yet
-  implemented.
+  RAR5 parsing is metadata-only, bounded, and covered by a synthetic regression
+  test; malformed or encrypted headers remain conservative.
 - A-03 detects VBA directory markers in legacy OLE Office attachments without
   opening or executing macro streams.
 - C-04 compares detected message language with the configured brand locale;

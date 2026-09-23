@@ -41,7 +41,7 @@
 | link.data_uri / cloud_form | L-04/L-06 | 18/18 | ✅ explicit data URI and credential-linked cloud forms |
 | link.punycode / brand_lookalike / many_domains | D-03/D-04/L-06 | 20/30/8 | ✅ |
 | attachment.dangerous_ext / double_ext / rtl_override | A-01 | 30/25/30 | ✅ |
-| attachment.archive_encrypted / archive_executable | A-02 | 25/30 | ✅ zip/RAR4/7z listing without extraction; RAR5 stays opaque |
+| attachment.archive_encrypted / archive_executable | A-02 | 25/30 | ✅ zip/RAR4/RAR5/7z listing without extraction |
 | attachment.macro | A-03 | 30 | ✅ OOXML and legacy OLE VBA directory markers |
 | attachment.html_active | A-06 | 25 | ✅ |
 | content.urgency / threat | C-01 | 10/10 | ✅ ru/en/kz |
