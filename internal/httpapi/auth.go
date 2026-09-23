@@ -70,9 +70,8 @@ func extractKey(r *http.Request) string {
 	return ""
 }
 
-// authenticate resolves an API key to a Principal; anonymous callers pass through
-// with RoleAnonymous and are gated per-route by allowAnonymous / requireRole.
-// TODO(F-4.7.4): OIDC session cookies for the UI (Business).
+// authenticate resolves an API key or an OIDC session to a Principal; anonymous
+// callers pass through with RoleAnonymous and are gated per-route.
 func (s *Server) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := Principal{Role: RoleAnonymous}
@@ -91,6 +90,10 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 				return
 			}
 			p = Principal{Role: k.Role, OrgID: k.OrgID, KeyID: k.ID, Name: k.Name}
+		} else if s.oidc != nil {
+			if sessionPrincipal, ok := s.oidc.session(r); ok {
+				p = sessionPrincipal
+			}
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), principalKey, p)))
 	})

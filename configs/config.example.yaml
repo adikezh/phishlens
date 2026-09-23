@@ -74,7 +74,7 @@ integrations:
 auth:
   anonymous_analyze: true    # для демо; в проде false
   api_keys_enabled: true
-  oidc: { enabled: false, issuer: "", client_id: "", client_secret_env: OIDC_SECRET, redirect_url: "" }
+  oidc: { enabled: false, issuer: "", client_id: "", client_secret_env: OIDC_CLIENT_SECRET, session_secret_env: OIDC_SESSION_SECRET, redirect_url: "", groups_claim: groups, analyst_group: phishlens-analyst, admin_group: phishlens-admin, org_claim: org_id }
 
 log:
   level: info                # debug | info | warn | error

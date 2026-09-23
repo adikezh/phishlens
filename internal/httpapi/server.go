@@ -4,6 +4,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -22,17 +23,31 @@ type Server struct {
 	app     *app.App
 	log     zerolog.Logger
 	limiter *rateLimiter
+	oidc    *oidcAuth
 }
 
 // New builds the server.
 func New(a *app.App) *Server {
-	return &Server{app: a, log: a.Log.With().Str("component", "http").Logger(), limiter: newRateLimiter(a.Cfg.Server.RateLimitRPS)}
+	s := &Server{app: a, log: a.Log.With().Str("component", "http").Logger(), limiter: newRateLimiter(a.Cfg.Server.RateLimitRPS)}
+	if a.Cfg.Auth.OIDC.Enabled {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if auth, err := newOIDCAuth(ctx, a.Cfg.Auth.OIDC); err != nil {
+			s.log.Error().Err(err).Msg("oidc initialization")
+		} else {
+			s.oidc = auth
+		}
+	}
+	return s
 }
 
 // Routes mounts the API onto r.
 func (s *Server) Routes(r chi.Router) {
 	r.Get("/health", s.handleHealth)
 	r.Method(http.MethodGet, "/metrics", promhttp.Handler())
+	r.Get("/auth/oidc/login", s.handleOIDCLogin)
+	r.Get("/auth/oidc/callback", s.handleOIDCCallback)
+	r.Get("/auth/logout", s.handleOIDCLogout)
 
 	r.Route("/v1", func(v1 chi.Router) {
 		v1.Use(s.authenticate)

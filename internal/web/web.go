@@ -90,6 +90,7 @@ type pageData struct {
 	Signals int
 	Brands  int
 	LLM     bool
+	OIDC    bool
 }
 
 func (u *UI) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -110,6 +111,7 @@ func (u *UI) operatorPage(w http.ResponseWriter, mode, title string) {
 		Version: buildinfo.Version, Edition: buildinfo.Edition,
 		Lang: i18n.Normalize(u.app.Cfg.Analysis.Language), Title: title, Mode: mode,
 		Signals: u.app.Registry.Len(), Brands: len(u.app.Brands.Brands()),
+		OIDC: u.app.Cfg.Auth.OIDC.Enabled,
 	})
 }
 

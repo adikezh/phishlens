@@ -54,6 +54,10 @@ that require external accounts, providers, or deployment-specific decisions.
   hashes, bearer authentication, organisation routing, verdict thresholding,
   bounded timeouts, and non-secret error handling. A live TheHive account is
   still required for external verification.
+- OIDC login/callback/logout now verify provider discovery, authorization state,
+  ID-token audience and nonce, and issue signed HttpOnly sessions with default-
+  deny role mapping. A live IdP, group/tenant claim mapping, rotation and
+  multi-instance session test remain deployment gates.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
@@ -87,7 +91,8 @@ that require external accounts, providers, or deployment-specific decisions.
 - IMAP, Microsoft Graph, Telegram, Outlook/Gmail add-in host validation.
 - Configure and verify a real URLhaus Auth-Key; without it the provider is explicitly degraded to unknown.
 - Live Safe Browsing/AbuseIPDB/VirusTotal accounts and rate limits.
-- OIDC, multi-tenant production isolation, live TheHive account verification,
+- Live OIDC IdP/group/tenant verification, multi-tenant production isolation,
+  live TheHive account verification,
   and IRIS/Jira account integration.
 - Sandbox isolation and browser detonation evidence.
 - Pilot evidence: one organization, two weeks, at least 20 real submissions,

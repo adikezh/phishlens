@@ -221,11 +221,16 @@ type Integrations struct {
 }
 
 type OIDC struct {
-	Enabled         bool   `mapstructure:"enabled"`
-	Issuer          string `mapstructure:"issuer"`
-	ClientID        string `mapstructure:"client_id"`
-	ClientSecretEnv string `mapstructure:"client_secret_env"`
-	RedirectURL     string `mapstructure:"redirect_url"`
+	Enabled          bool   `mapstructure:"enabled"`
+	Issuer           string `mapstructure:"issuer"`
+	ClientID         string `mapstructure:"client_id"`
+	ClientSecretEnv  string `mapstructure:"client_secret_env"`
+	RedirectURL      string `mapstructure:"redirect_url"`
+	SessionSecretEnv string `mapstructure:"session_secret_env"`
+	GroupsClaim      string `mapstructure:"groups_claim"`
+	AnalystGroup     string `mapstructure:"analyst_group"`
+	AdminGroup       string `mapstructure:"admin_group"`
+	OrgClaim         string `mapstructure:"org_claim"`
 }
 
 type Auth struct {
@@ -296,6 +301,11 @@ func (c *Config) Validate() error {
 	if (c.Server.TLS.CertFile == "") != (c.Server.TLS.KeyFile == "") {
 		return errors.New("config: server.tls.cert and server.tls.key must be configured together")
 	}
+	if c.Auth.OIDC.Enabled {
+		if c.Auth.OIDC.Issuer == "" || c.Auth.OIDC.ClientID == "" || c.Auth.OIDC.ClientSecretEnv == "" || c.Auth.OIDC.RedirectURL == "" || c.Auth.OIDC.SessionSecretEnv == "" {
+			return errors.New("config: auth.oidc requires issuer, client_id, client_secret_env, redirect_url, and session_secret_env when enabled")
+		}
+	}
 	return nil
 }
 
@@ -304,6 +314,13 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.base_url", "http://localhost:8082")
 	v.SetDefault("server.max_upload_mb", 25)
 	v.SetDefault("server.rate_limit_rps", 5.0)
+	v.SetDefault("auth.api_keys_enabled", true)
+	v.SetDefault("auth.anonymous_analyze", false)
+	v.SetDefault("auth.oidc.enabled", false)
+	v.SetDefault("auth.oidc.client_secret_env", "OIDC_CLIENT_SECRET")
+	v.SetDefault("auth.oidc.session_secret_env", "OIDC_SESSION_SECRET")
+	v.SetDefault("auth.oidc.groups_claim", "groups")
+	v.SetDefault("auth.oidc.org_claim", "org_id")
 
 	v.SetDefault("storage.driver", "sqlite")
 	v.SetDefault("storage.dsn", "file:data/phishlens.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")

@@ -34,6 +34,11 @@
 | `notify.Notifier` | `internal/notify` | HMAC webhook (static and encrypted org subscriptions), privacy-safe Wazuh HTTP delivery, and TheHive 5 alert API |
 | `ingest.Runner` | `internal/ingest` | imap / graph / telegram — TODO |
 
+Browser OIDC login is implemented in `internal/httpapi/oidc.go`: discovery,
+authorization state, nonce and audience verification, signed HttpOnly sessions,
+and default-deny group-to-role mapping. A live identity provider and
+deployment-specific claim mapping remain external evidence gates.
+
 ## Добавление сигнала
 
 1. Файл `internal/signals/<category>/<hxx>_<name>.go` с функцией `func(ctx, *signals.Input) ([]domain.Signal, error)`.
