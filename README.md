@@ -74,6 +74,9 @@ phishlens weights tune --labels labels.jsonl --out weights.tuned.yaml
 The tuner preserves thresholds, keeps unseen base signals, and bounds learned
 weights to -100..100. Review the output before using it as a pilot override.
 
+Продуктовая landing-страница доступна локально на `/landing`; интерактивное
+демо проверки — на `/`.
+
 ## Что работает локально
 
 - `analyze --text/--file` — парсинг `.eml`/текста, зарегистрированные проверки,

@@ -71,6 +71,7 @@ func New(a *app.App) (*UI, error) {
 // Routes mounts UI routes.
 func (u *UI) Routes(r chi.Router) {
 	r.Get("/", u.handleIndex)
+	r.Get("/landing", u.handleLanding)
 	r.Post("/ui/analyze", u.handleAnalyze)
 	r.Get("/ui/queue", u.handleQueue)
 	r.Get("/ui/campaigns", u.handleCampaigns)
@@ -104,6 +105,10 @@ func (u *UI) handleIndex(w http.ResponseWriter, r *http.Request) {
 		Title:   "Проверка письма",
 	}
 	u.render(w, "index.html", d)
+}
+
+func (u *UI) handleLanding(w http.ResponseWriter, _ *http.Request) {
+	u.render(w, "landing.html", pageData{Version: buildinfo.Version, Edition: buildinfo.Edition, Title: "PhishLens"})
 }
 
 func (u *UI) operatorPage(w http.ResponseWriter, mode, title string) {

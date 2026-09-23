@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PhishLens — проверка подозрительных писем</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#f4f7f8] text-[#10222b]">
+  <header class="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+    <a class="text-xl font-bold" href="/">PhishLens</a>
+    <a class="rounded bg-[#10222b] px-4 py-2 text-sm font-semibold text-white" href="/">Проверить письмо</a>
+  </header>
+  <main class="mx-auto max-w-6xl px-6 pb-16">
+    <section class="grid gap-8 py-14 lg:grid-cols-[1.2fr_.8fr] lg:items-center">
+      <div>
+        <p class="mb-4 text-sm font-semibold uppercase tracking-[.2em] text-amber-700">Self-hosted anti-phishing</p>
+        <h1 class="text-4xl font-bold leading-tight sm:text-6xl">Поймите, почему письмо опасно — за секунды</h1>
+        <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-600">PhishLens анализирует заголовки, ссылки, домены, вложения и признаки социальной инженерии. Сотрудник получает понятный ответ, а ИБ — доказательства и очередь обращений.</p>
+        <div class="mt-8 flex flex-wrap gap-3"><a class="rounded bg-amber-400 px-5 py-3 font-semibold hover:bg-amber-300" href="/">Запустить демо</a><a class="rounded border border-slate-300 bg-white px-5 py-3 font-semibold" href="/v1/demos">Посмотреть API demos</a></div>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"><p class="text-sm text-slate-500">Пример результата</p><p class="mt-5 text-3xl font-bold text-red-700">Фишинг · 92/100</p><p class="mt-3 text-slate-600">Поддельный домен бренда, запрос кода из SMS и ссылка на форму входа.</p><div class="mt-6 space-y-2 text-sm"><div class="rounded bg-red-50 p-3">domain.brand_lookalike</div><div class="rounded bg-red-50 p-3">content.sms_code_request</div><div class="rounded bg-amber-50 p-3">link.login_form</div></div></div>
+    </section>
+    <section class="grid gap-4 py-8 sm:grid-cols-3"><article class="rounded-xl bg-white p-5 shadow-sm"><h2 class="font-semibold">60 сигналов</h2><p class="mt-2 text-sm text-slate-600">Детерминированные проверки с доказательствами и локализацией ru/en/kz.</p></article><article class="rounded-xl bg-white p-5 shadow-sm"><h2 class="font-semibold">Privacy-first</h2><p class="mt-2 text-sm text-slate-600">В Community тела писем не сохраняются; внешние запросы проходят редакцию.</p></article><article class="rounded-xl bg-white p-5 shadow-sm"><h2 class="font-semibold">Для ИБ</h2><p class="mt-2 text-sm text-slate-600">Очередь, кампании, отчёты, IOC, Wazuh, TheHive и HMAC-webhooks.</p></article></section>
+    <section class="py-10"><h2 class="text-2xl font-bold">Как отличается от облачного lookup</h2><div class="mt-4 overflow-x-auto rounded-xl bg-white shadow-sm"><table class="min-w-full text-left text-sm"><thead class="border-b text-slate-500"><tr><th class="p-4">Возможность</th><th class="p-4">PhishLens</th><th class="p-4">Lookup-сервис</th></tr></thead><tbody><tr class="border-b"><td class="p-4">Self-hosted и offline</td><td class="p-4 text-emerald-700">Да</td><td class="p-4">Обычно нет</td></tr><tr class="border-b"><td class="p-4">Объяснение технических сигналов</td><td class="p-4 text-emerald-700">Да</td><td class="p-4">Ограниченно</td></tr><tr><td class="p-4">Очередь и интеграции ИБ</td><td class="p-4 text-emerald-700">Да</td><td class="p-4">Зависит от тарифа</td></tr></tbody></table></div></section>
+  </main>
+</body>
+</html>
