@@ -1,5 +1,17 @@
-# Helm chart — TODO
+# PhishLens Helm chart
 
-Планируемая структура: Chart.yaml, values.yaml (image, config как ConfigMap, секреты через
-existingSecret), templates/{deployment,service,ingress,configmap,pvc}.yaml, опциональные
-sub-charts ocr и sandbox. Пока используйте deploy/docker-compose.yml.
+This chart deploys the Community service with a SQLite PVC by default. The
+container runs as UID/GID 65532 with a read-only root filesystem, dropped Linux
+capabilities, a memory-backed `/tmp`, and no service-account token mount.
+
+```bash
+helm install phishlens ./deploy/helm \
+  --set image.tag=0.1.0 \
+  --set existingSecret=phishlens-secrets
+```
+
+`existingSecret` is optional for demo mode and should contain `PL_ENC_KEY`,
+`URLHAUS_AUTH_KEY`, and any configured LLM/provider credentials. Enable the
+Ingress only with an ingress controller and TLS policy appropriate for the
+cluster. PostgreSQL is not silently enabled by this chart; the current verified
+storage backend is SQLite.

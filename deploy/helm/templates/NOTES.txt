@@ -1,0 +1,10 @@
+PhishLens has been deployed.
+
+Port-forward locally:
+  kubectl port-forward svc/{{ include "phishlens.fullname" . }} 8082:{{ .Values.service.port }}
+
+Check:
+  curl http://127.0.0.1:8082/health
+
+For production, set image.tag to a released immutable tag and provide
+existingSecret with API keys and PL_ENC_KEY before enabling body storage.

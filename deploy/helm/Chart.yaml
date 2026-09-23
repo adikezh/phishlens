@@ -1,0 +1,10 @@
+apiVersion: v2
+name: phishlens
+description: Self-hosted phishing analysis service
+type: application
+version: 0.1.0
+appVersion: "dev"
+keywords:
+  - security
+  - phishing
+  - email

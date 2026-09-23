@@ -1,0 +1,106 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/adikezh/phishlens
+  tag: dev
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: false
+  annotations: {}
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+service:
+  type: ClusterIP
+  port: 8082
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: phishlens.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 1
+    memory: 512Mi
+
+persistence:
+  enabled: true
+  accessModes: [ReadWriteOnce]
+  size: 1Gi
+  storageClassName: ""
+
+existingSecret: ""
+
+config:
+  server:
+    listen: ":8082"
+    base_url: "http://phishlens.local"
+    max_upload_mb: 25
+    rate_limit_rps: 5
+  storage:
+    driver: sqlite
+    dsn: "file:/app/var/phishlens.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
+    store_bodies: false
+    encryption_key_env: PL_ENC_KEY
+    retention:
+      submissions: 90d
+  analysis:
+    language: ru
+    timeout: 10s
+    thresholds:
+      phishing: 70
+      suspicious: 40
+    weights_file: /app/config/weights.yaml
+    brands_file: /app/config/brands.yaml
+    data_dir: /app/data
+    prompts_dir: /app/prompts
+    custom_brands_enabled: true
+  reputation:
+    rdap: {enabled: true, cache_ttl: 168h}
+    dnsbl: [zen.spamhaus.org]
+    urlhaus: {enabled: true, auth_key_env: URLHAUS_AUTH_KEY}
+    openphish: {enabled: true}
+    timeout: 3s
+  ocr:
+    mode: "off"
+  llm:
+    enabled: false
+  sandbox:
+    enabled: false
+  auth:
+    anonymous_analyze: false
+    api_keys_enabled: true
+  log:
+    level: info
+    pretty: false

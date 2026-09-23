@@ -20,6 +20,8 @@ that require external accounts, providers, or deployment-specific decisions.
   with Basic Auth; unavailable Wazuh is reported as a degraded notification.
 - `phishlens report` now emits Markdown, minimal valid DOCX, and PDF formats
   from privacy-safe aggregate statistics.
+- Helm chart renders and lints with PVC-backed SQLite, probes, resource limits,
+  non-root/read-only security controls, and optional existingSecret/Ingress.
 - Analyst API actions now support campaign grouping, blocklisting a domain from
   a submission, and local incident escalation with audit records.
 - Community storage defaults to metadata/signals only; message bodies require
