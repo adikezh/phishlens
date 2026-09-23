@@ -6,15 +6,13 @@ package review
 import (
 	"context"
 	"errors"
+	"net"
 	"sort"
 	"strings"
 
 	"github.com/phishlens/phishlens/internal/domain"
 	"github.com/phishlens/phishlens/internal/store"
 )
-
-// ErrNotImplemented marks stubbed actions.
-var ErrNotImplemented = errors.New("review: not implemented")
 
 // Campaign groups submissions sharing sender domain / links / subject (F-4.6.1).
 type Campaign struct {
@@ -83,8 +81,34 @@ func (q *Queue) SetStatus(ctx context.Context, id string, status domain.Status, 
 	return q.st.Audit(ctx, store.AuditEntry{Actor: actor, Action: "submission.review", Target: id, Details: string(status)})
 }
 
-// BlockDomain — TODO(F-4.6.2): add to org blocklist + fire "block" webhook to gateway/proxy/DNS filter.
-func (q *Queue) BlockDomain(_ context.Context, _ string, _ string) error { return ErrNotImplemented }
+// BlockDomain adds a validated domain to the submission's organization blocklist
+// and records the action. External gateway delivery is handled by the configured
+// notifier fanout after the local decision is committed.
+func (q *Queue) BlockDomain(ctx context.Context, submissionID, domainName, actor string) error {
+	sub, err := q.st.GetSubmission(ctx, submissionID)
+	if err != nil {
+		return err
+	}
+	domainName = strings.ToLower(strings.TrimSpace(domainName))
+	if domainName == "" || net.ParseIP(domainName) != nil || strings.ContainsAny(domainName, "/ @:") {
+		return errors.New("review: a domain is required")
+	}
+	if err := q.st.AddEntry(ctx, store.ListEntry{OrgID: sub.OrgID, Kind: store.ListBlock, Value: domainName, CreatedBy: actor, Note: "from submission " + sub.ID}); err != nil {
+		return err
+	}
+	return q.st.Audit(ctx, store.AuditEntry{OrgID: sub.OrgID, Actor: actor, Action: "domain.block", Target: domainName, Details: sub.ID})
+}
 
-// CreateIncident — TODO(F-4.6.2): Wazuh custom event / TheHive / IRIS / Jira.
-func (q *Queue) CreateIncident(_ context.Context, _ string) error { return ErrNotImplemented }
+// CreateIncident moves a submission to escalated and records the local
+// incident decision. The configured Wazuh notifier receives the verdict event;
+// TheHive/IRIS/Jira remain optional external sinks.
+func (q *Queue) CreateIncident(ctx context.Context, submissionID, actor string) error {
+	sub, err := q.st.GetSubmission(ctx, submissionID)
+	if err != nil {
+		return err
+	}
+	if err := q.st.UpdateSubmissionStatus(ctx, submissionID, domain.StatusEscalated, actor); err != nil {
+		return err
+	}
+	return q.st.Audit(ctx, store.AuditEntry{OrgID: sub.OrgID, Actor: actor, Action: "incident.create", Target: submissionID})
+}

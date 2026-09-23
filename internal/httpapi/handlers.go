@@ -335,12 +335,11 @@ func (s *Server) handleBlockDomain(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "bad_request", "a domain is required")
 		return
 	}
-	if err := s.app.Store.AddEntry(r.Context(), store.ListEntry{OrgID: p.OrgID, Kind: store.ListBlock, Value: domainName, CreatedBy: p.Name, Note: "from submission " + sub.ID}); err != nil {
+	if err := review.NewQueue(s.app.Store).BlockDomain(r.Context(), sub.ID, domainName, p.Name); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", err.Error())
 		return
 	}
 	app.InvalidateListCache()
-	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "domain.block", Target: domainName, Details: sub.ID})
 	writeJSON(w, http.StatusCreated, map[string]string{"domain": domainName, "submission_id": sub.ID})
 }
 
@@ -349,11 +348,10 @@ func (s *Server) handleCreateIncident(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := s.app.Store.UpdateSubmissionStatus(r.Context(), sub.ID, domain.StatusEscalated, p.Name); err != nil {
+	if err := review.NewQueue(s.app.Store).CreateIncident(r.Context(), sub.ID, p.Name); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal", err.Error())
 		return
 	}
-	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "incident.create", Target: sub.ID})
 	writeJSON(w, http.StatusCreated, map[string]string{"submission_id": sub.ID, "status": string(domain.StatusEscalated)})
 }
 
