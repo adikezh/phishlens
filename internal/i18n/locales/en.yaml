@@ -75,3 +75,5 @@ recommend.no_attachment: "Do not open the attachment — it may contain maliciou
 recommend.no_credentials: "Never enter a password, SMS code or card details via a link from an email."
 recommend.verify_sender: "Confirm the request with the sender in person or by a phone number from the directory."
 recommend.report: "Click \"Report to security\" — it helps protect your colleagues."
+header.received_ip_listed: "A sending Received IP is listed in threat intelligence (%s, %s)."
+header.bulk_mailer_personal: "A bulk-mailing platform (%s) appears on a personal-looking message."

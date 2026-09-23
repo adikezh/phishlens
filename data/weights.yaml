@@ -12,6 +12,8 @@ signals:
   header.messageid_mismatch: 8
   header.messageid_missing: 5
   header.date_skew: 8
+  header.received_ip_listed: 30
+  header.bulk_mailer_personal: 8
   # --- аутентификация (H-04) ---
   auth.spf_fail: 20
   auth.spf_softfail: 10

@@ -26,6 +26,7 @@
 | auth.aligned_official | F-4.5.3 | −40 | ✅ |
 | header.messageid_mismatch / messageid_missing | H-06 | 8/5 | ✅ + тесты |
 | header.date_skew | H-08 | 8 | ✅ + тесты |
+| header.received_ip_listed / bulk_mailer_personal | H-05/H-07 | 30/8 | ✅ TI hook + bulk-mailer header heuristic |
 | domain.punycode / mixed_script | D-03 | 20/25 | ✅ |
 | domain.brand_lookalike | D-04 | 30 | ✅ (таблица в brands_test) |
 | domain.free_mail_org | D-05 | 15 | ✅ |
@@ -56,4 +57,4 @@
 | attachment.pdf_active | A-04 | 25 | ✅ bounded static scan; no rendering or action execution |
 | semantic.llm_phishing / suspicious / clean | F-4.4.3 | 25/10/−15 | ✅ |
 
-Не начаты: H-05, H-07, C-04, L-05, L-07, L-08, A-02 (rar/7z), A-03 (legacy OLE), A-05.
+Не начаты: C-04, L-05, A-02 (rar/7z), A-03 (legacy OLE), A-05.

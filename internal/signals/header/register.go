@@ -9,12 +9,14 @@ import (
 
 // Signal IDs.
 const (
-	IDDisplayNameEmail   = "header.displayname_email"   // H-01
-	IDReplyToMismatch    = "header.replyto_mismatch"    // H-02
-	IDReturnPathMismatch = "header.returnpath_mismatch" // H-03
-	IDMessageIDMismatch  = "header.messageid_mismatch"  // H-06
-	IDMessageIDMissing   = "header.messageid_missing"   // H-06
-	IDDateSkew           = "header.date_skew"           // H-08
+	IDDisplayNameEmail   = "header.displayname_email"    // H-01
+	IDReplyToMismatch    = "header.replyto_mismatch"     // H-02
+	IDReturnPathMismatch = "header.returnpath_mismatch"  // H-03
+	IDMessageIDMismatch  = "header.messageid_mismatch"   // H-06
+	IDMessageIDMissing   = "header.messageid_missing"    // H-06
+	IDDateSkew           = "header.date_skew"            // H-08
+	IDReceivedIPListed   = "header.received_ip_listed"   // H-05
+	IDBulkMailer         = "header.bulk_mailer_personal" // H-07
 )
 
 // Register adds all header checks to r.
@@ -25,7 +27,7 @@ func Register(r *signals.Registry) {
 		signals.NewFunc(IDReturnPathMismatch, domain.CategoryHeader, returnPathMismatch),
 		signals.NewFunc(IDMessageIDMismatch, domain.CategoryHeader, messageID),
 		signals.NewFunc(IDDateSkew, domain.CategoryHeader, dateSkew),
+		signals.NewFunc(IDReceivedIPListed, domain.CategoryHeader, receivedIPListed),
+		signals.NewFunc(IDBulkMailer, domain.CategoryHeader, bulkMailerPersonal),
 	)
-	// TODO(H-05): Received chain IP in TI / geography mismatch — needs reputation stage.
-	// TODO(H-07): X-Mailer / User-Agent of bulk mailers on a personal-looking message.
 }

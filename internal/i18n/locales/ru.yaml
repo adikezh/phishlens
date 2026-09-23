@@ -87,3 +87,5 @@ recommend.no_attachment: "Не открывайте вложение — оно 
 recommend.no_credentials: "Никогда не вводите пароль, код из SMS или данные карты по ссылке из письма."
 recommend.verify_sender: "Подтвердите просьбу у отправителя лично или по телефону из справочника."
 recommend.report: "Нажмите «Сообщить в ИБ» — это поможет защитить коллег."
+header.received_ip_listed: "IP отправителя из Received найден в TI (%s, %s)."
+header.bulk_mailer_personal: "Платформа массовой рассылки (%s) указана в похожем на личное письме."

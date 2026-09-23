@@ -38,6 +38,8 @@ that require external accounts, providers, or deployment-specific decisions.
   payloads are added to the normal link-analysis path.
 - L-03 known shorteners are expanded with bounded HEAD redirects and private/
   local-address rejection; expansion is disabled in offline mode.
+- H-05 Received IPs can be checked through the existing TI reputation contract;
+  H-07 detects known bulk-mailer headers on single-recipient messages.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
