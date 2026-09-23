@@ -94,6 +94,9 @@ that require external accounts, providers, or deployment-specific decisions.
   Russian, English, and Kazakh language packs. The Compose profile, health
   endpoint, bounded image input, timeout, and degraded-main-service behavior
   are covered; multilingual OCR quality still needs a representative corpus.
+- Custom organization brands now persist `colors` and `logo_phash` through
+  migration 0005, and legacy Windows-1251/Koi8-compatible MIME text is decoded
+  before language and signal analysis.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
