@@ -2,12 +2,22 @@ package reputation
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestReverseIPForDNSBL(t *testing.T) {
+	require.Equal(t, "7.113.0.203", reverseIP([]byte{203, 0, 113, 7}))
+	require.Equal(t,
+		"1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2",
+		reverseIP(net.ParseIP("2001:db8::1")),
+	)
+	require.Empty(t, reverseIP(nil))
+}
 
 func TestSafeBrowsingLookup(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -178,8 +178,8 @@ func (c *Client) IPListed(ctx context.Context, ip string) (bool, string, error) 
 		return false, "", nil
 	}
 	parsed := net.ParseIP(ip)
-	if parsed == nil || parsed.To4() == nil {
-		return false, "", nil // TODO: IPv6 nibble format
+	if parsed == nil {
+		return false, "", nil
 	}
 	if parsed.IsPrivate() || parsed.IsLoopback() {
 		return false, "", nil
@@ -192,7 +192,7 @@ func (c *Client) IPListed(ctx context.Context, ip string) (bool, string, error) 
 	if err := c.allowProvider("dnsbl"); err != nil {
 		lastErr = err
 	} else {
-		rev := reverse4(parsed.To4())
+		rev := reverseIP(parsed)
 		for _, zone := range c.cfg.DNSBL {
 			q := rev + "." + strings.TrimSuffix(zone, ".") + "."
 			addrs, err := c.resolver.LookupHost(ctx, q)
@@ -366,6 +366,26 @@ type listResult struct {
 
 func reverse4(ip net.IP) string {
 	return fmt.Sprintf("%d.%d.%d.%d", ip[3], ip[2], ip[1], ip[0])
+}
+
+// reverseIP renders the DNSBL query label for either address family. IPv6
+// DNSBL zones use all 32 hexadecimal nibbles in reverse order.
+func reverseIP(ip net.IP) string {
+	if v4 := ip.To4(); v4 != nil {
+		return reverse4(v4)
+	}
+	v6 := ip.To16()
+	if v6 == nil {
+		return ""
+	}
+	const hexDigits = "0123456789abcdef"
+	buf := make([]byte, 0, 63)
+	for i := len(v6) - 1; i >= 0; i-- {
+		b := v6[i]
+		buf = append(buf, hexDigits[b&0x0f], '.')
+		buf = append(buf, hexDigits[b>>4], '.')
+	}
+	return string(buf[:len(buf)-1])
 }
 
 // ---- tiny TTL cache -------------------------------------------------------
