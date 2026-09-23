@@ -6,12 +6,16 @@
 3. M365 admin center → Integrated apps → Upload custom app → manifest (или sideload для теста).
 4. Панель берёт письмо через getAsFileAsync (Mailbox 1.14+) и шлёт `POST /v1/analyze {eml_base64, channel: outlook}`.
    После анализа кнопка «Сообщить в ИБ» вызывает `POST /v1/submissions/{id}/report`;
-   ключ API задаётся администратором или заменяется SSO-токеном в Business.
+   ключ API вводится оператором в панели и хранится только в localStorage
+   add-in либо запрос использует SSO-cookie; MIME slices собираются в один
+   base64 payload, а `202 Accepted` опрашивается до готового результата.
+   Ribbon command объявлен в `manifest.xml` через VersionOverrides.
 Статика отдаётся сервисом по `/addins/outlook/`.
 
 ## Gmail (F-4.1.7)
 addins/gmail/Code.gs + appsscript.json: Apps Script add-on, Script Properties PHISHLENS_URL, PHISHLENS_KEY.
 Публикация через Google Workspace Marketplace SDK (internal).
 
-## Telegram (F-4.1.8) — TODO
-internal/ingest/telegram: привязка чата к организации по коду, текст/скриншот → вердикт.
+## Telegram (F-4.1.8)
+`internal/ingest/telegram` реализует Bot API long polling, привязку чата к
+организации по `/start <код>`, текст/скриншот → общий analyzer → verdict.

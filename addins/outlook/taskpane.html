@@ -15,6 +15,9 @@
 </head>
 <body>
   <h3>PhishLens</h3>
+  <label for="api-key">API-ключ (если SSO-cookie недоступна)</label>
+  <input id="api-key" type="password" autocomplete="off" placeholder="pl_…" style="display:block;width:100%;box-sizing:border-box;margin:4px 0 8px;padding:6px">
+  <button id="save-key">Сохранить ключ</button>
   <button id="check">Проверить письмо</button>
   <button id="report" disabled>Сообщить в ИБ</button>
   <p id="status"></p>
