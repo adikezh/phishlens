@@ -10,7 +10,7 @@
 │ Gmail*     │             │ 5. llm        internal/llm  (redact → JSON)│        │  wazuh*      │
 │ IMAP/Graph*│             │ 6. semantic   internal/signals/semantic    │        │  thehive*    │
 │ Telegram*  │             │ 7. score      internal/score               │        └──────────────┘
-└────────────┘             └───────────────────────────────────────────┘          * = заглушка
+└────────────┘             └───────────────────────────────────────────┘          * = внешняя среда
 ```
 
 ## Принципы (ТЗ §2)
@@ -24,7 +24,7 @@
 
 | Интерфейс | Где | Реализации |
 |---|---|---|
-| `signals.Check` | `internal/signals` | ~40 функций в `signals/<category>/` |
+| `signals.Check` | `internal/signals` | 60 зарегистрированных проверок в `signals/<category>/` |
 | `signals.BrandLookup` | `internal/signals` | `brands.Matcher` |
 | `signals.ListLookup` | `internal/signals` | `app.storeLists` (allow/block из БД) |
 | `signals.ReputationLookup` | `internal/signals` | `reputation.Client` (DNSBL, OpenPhish, RDAP; URLhaus with Auth-Key) |
@@ -68,6 +68,8 @@ analyzer updates that same stored resource.
 обращения; остаются только вердикт, score, бренд, ограниченный список сигналов
 и общие уроки для сотрудника.
 
-## Что заглушено
+## Граница проверки
 
-См. `grep -rn "TODO(" internal/` — каждая заглушка ссылается на пункт ТЗ.
+Реализованные адаптеры внешних систем всё равно требуют отдельной live-проверки
+с реальным аккаунтом и сетевой политикой. Матрица требований, команд проверки и
+остаточных внешних гейтов находится в [tz-audit.md](tz-audit.md).
