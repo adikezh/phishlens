@@ -30,6 +30,8 @@ that require external accounts, providers, or deployment-specific decisions.
   a submission, and local incident escalation with audit records.
 - `phishlens weights tune` now calibrates bounded signal weights from analyst
   JSONL labels and writes a reproducible YAML override file.
+- L-07 tracking pixels and missing unsubscribe instructions are detected from
+  inline-image metadata/HTML and marketing-language context.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.

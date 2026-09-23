@@ -35,6 +35,8 @@ signals:
   link.punycode: 20
   link.brand_lookalike: 30
   link.many_domains: 8
+  link.tracking_pixel: 8
+  link.missing_unsubscribe: 8
   # --- вложения (A-xx) ---
   attachment.dangerous_ext: 30
   attachment.double_ext: 25
