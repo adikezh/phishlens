@@ -19,7 +19,8 @@ const (
 // Register adds domain checks.
 func Register(r *signals.Registry) {
 	r.Register(
-		signals.NewFunc(IDPunycode, domain.CategoryDomain, punycodeMixed),
+		signals.NewFunc(IDPunycode, domain.CategoryDomain, punycodeOnly),
+		signals.NewFunc(IDMixedScript, domain.CategoryDomain, mixedScriptOnly),
 		signals.NewFunc(IDBrandLookalike, domain.CategoryDomain, brandLookalike),
 		signals.NewFunc(IDFreeMailOrg, domain.CategoryDomain, freeMailOrg),
 		signals.NewFunc(IDRiskyTLD, domain.CategoryDomain, riskyTLD),

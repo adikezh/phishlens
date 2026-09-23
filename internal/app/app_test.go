@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"path/filepath"
 	"testing"
 	"time"
@@ -10,10 +11,23 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 
+	"github.com/phishlens/phishlens/internal/authcheck"
 	"github.com/phishlens/phishlens/internal/config"
 	"github.com/phishlens/phishlens/internal/domain"
 	"github.com/phishlens/phishlens/internal/report"
 )
+
+type appAuthResolver struct{ txt map[string][]string }
+
+func (r appAuthResolver) LookupTXT(_ context.Context, name string) ([]string, error) {
+	if v, ok := r.txt[name]; ok {
+		return v, nil
+	}
+	return nil, &net.DNSError{Name: name, IsNotFound: true}
+}
+func (appAuthResolver) LookupMX(context.Context, string) ([]*net.MX, error)        { return nil, nil }
+func (appAuthResolver) LookupIPAddr(context.Context, string) ([]net.IPAddr, error) { return nil, nil }
+func (appAuthResolver) LookupAddr(context.Context, string) ([]string, error)       { return nil, nil }
 
 // testApp builds an offline app with a temp SQLite database.
 func testApp(t *testing.T) *App {
@@ -58,6 +72,28 @@ func TestDemosEndToEnd(t *testing.T) {
 		require.Len(t, got.Result.Signals, len(sub.Result.Signals))
 		require.Nil(t, got.Message, "Community: bodies/subjects are not stored")
 	}
+}
+
+func TestOwnAuthenticationFallbackIsWiredIntoAnalyzer(t *testing.T) {
+	a := testApp(t)
+	a.OwnAuthEnabled = true
+	a.OwnAuth = appAuthResolver{txt: map[string][]string{
+		"example.com":        {"v=spf1 ip4:203.0.113.9 -all"},
+		"_dmarc.example.com": {"v=DMARC1; p=reject"},
+	}}
+	raw := []byte("From: sender@example.com\r\n" +
+		"Return-Path: <sender@example.com>\r\n" +
+		"Received: from mx.example.net ([203.0.113.9]) by relay.example.net; Wed, 23 Sep 2026 12:00:00 +0000\r\n" +
+		"Subject: hello\r\n\r\nhello\r\n")
+
+	sub, err := a.Analyzer.Analyze(context.Background(), Request{Kind: domain.KindEML, Data: raw})
+	require.NoError(t, err)
+	require.NotNil(t, sub.Message)
+	require.Equal(t, "own", sub.Message.AuthResults.Source)
+	require.Equal(t, domain.AuthPass, sub.Message.AuthResults.SPF)
+	require.Equal(t, domain.AuthPass, sub.Message.AuthResults.DMARC)
+	require.NotContains(t, ids(sub.Result.Signals), "auth.unverified")
+	var _ authcheck.Resolver = appAuthResolver{}
 }
 
 // ТЗ §10: prompt-injection text inside the email must not change the verdict.

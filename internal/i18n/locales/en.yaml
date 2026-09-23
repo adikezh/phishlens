@@ -79,4 +79,13 @@ recommend.no_credentials: "Never enter a password, SMS code or card details via 
 recommend.verify_sender: "Confirm the request with the sender in person or by a phone number from the directory."
 recommend.report: "Click \"Report to security\" — it helps protect your colleagues."
 header.received_ip_listed: "A sending Received IP is listed in threat intelligence (%s, %s)."
+header.received_private_ip: "A private or local IP %s appears in the Received chain; verify the route."
 header.bulk_mailer_personal: "A bulk-mailing platform (%s) appears on a personal-looking message."
+
+link.cloud_form: "The link leads to cloud form %s and is accompanied by a request for secret data."
+link.data_uri: "The link uses a data: URI and may hide a payload."
+
+content.sms_code_request: "The message requests an SMS or one-time password code."
+content.card_data_request: "The message requests payment-card data."
+content.bank_detail_change: "The message reports a change to bank details: %s."
+content.kz_identifier: "The message contains a Kazakhstan IIN/BIN-shaped identifier: %s."

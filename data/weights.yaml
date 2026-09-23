@@ -13,6 +13,7 @@ signals:
   header.messageid_missing: 5
   header.date_skew: 8
   header.received_ip_listed: 30
+  header.received_private_ip: 3
   header.bulk_mailer_personal: 8
   # --- аутентификация (H-04) ---
   auth.spf_fail: 20
@@ -40,6 +41,8 @@ signals:
   link.tracking_pixel: 8
   link.missing_unsubscribe: 8
   link.login_form: 30
+  link.cloud_form: 18
+  link.data_uri: 18
   # --- вложения (A-xx) ---
   attachment.dangerous_ext: 30
   attachment.double_ext: 25
@@ -53,9 +56,13 @@ signals:
   content.urgency: 10
   content.threat: 10
   content.credential_request: 20
+  content.sms_code_request: 12
+  content.card_data_request: 12
   content.generic_greeting: 8
   content.bec_pattern: 40
   content.finance_request: 10
+  content.bank_detail_change: 15
+  content.kz_identifier: 6
   content.hidden_text: 15
   content.image_only: 10
   # --- бренд (F-4.3.3) ---

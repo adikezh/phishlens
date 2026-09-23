@@ -22,8 +22,11 @@ const (
 // Register adds attachment checks.
 func Register(r *signals.Registry) {
 	r.Register(
-		signals.NewFunc(IDDangerousExt, domain.CategoryAttachment, dangerousName),
-		signals.NewFunc(IDArchiveEncrypted, domain.CategoryAttachment, archive),
+		signals.NewFunc(IDDangerousExt, domain.CategoryAttachment, dangerousExtOnly),
+		signals.NewFunc(IDDoubleExt, domain.CategoryAttachment, doubleExtOnly),
+		signals.NewFunc(IDRTLOverride, domain.CategoryAttachment, rtlOnly),
+		signals.NewFunc(IDArchiveEncrypted, domain.CategoryAttachment, archiveEncryptedOnly),
+		signals.NewFunc(IDArchiveExecutable, domain.CategoryAttachment, archiveExecutableOnly),
 		signals.NewFunc(IDMacro, domain.CategoryAttachment, macro),
 		signals.NewFunc(IDHTMLActive, domain.CategoryAttachment, htmlActive),
 		signals.NewFunc(IDPDFActive, domain.CategoryAttachment, pdfActive),

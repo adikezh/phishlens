@@ -3,10 +3,15 @@ module github.com/phishlens/phishlens
 go 1.26.7
 
 require (
+	blitiri.com.ar/go/spf v1.6.0
 	github.com/anthropics/anthropic-sdk-go v1.73.0
 	github.com/bodgit/sevenzip v1.6.1
+	github.com/chromedp/cdproto v0.0.0-20260714215040-dc233986426f
+	github.com/chromedp/chromedp v0.16.0
 	github.com/coreos/go-oidc/v3 v3.16.0
+	github.com/corona10/goimagehash v1.1.0
 	github.com/emersion/go-imap/v2 v2.0.0-beta.8
+	github.com/emersion/go-msgauth v0.7.0
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-playground/validator/v10 v10.30.4
 	github.com/google/uuid v1.6.0
@@ -34,10 +39,7 @@ require (
 	github.com/bodgit/windows v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/chromedp/cdproto v0.0.0-20260714215040-dc233986426f // indirect
-	github.com/chromedp/chromedp v0.16.0 // indirect
 	github.com/chromedp/sysutil v1.1.0 // indirect
-	github.com/corona10/goimagehash v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emersion/go-message v0.18.2 // indirect

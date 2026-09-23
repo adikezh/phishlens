@@ -46,16 +46,16 @@ type LinkSandbox interface {
 
 // Input is everything a check may look at.
 type Input struct {
-	Mail   *domain.ParsedMail
-	Brand  *domain.BrandMatch
-	Lang   string
-	OrgID  string
-	Data   *refdata.Data
-	Brands BrandLookup
-	Lists  ListLookup
-	Rep    ReputationLookup
+	Mail    *domain.ParsedMail
+	Brand   *domain.BrandMatch
+	Lang    string
+	OrgID   string
+	Data    *refdata.Data
+	Brands  BrandLookup
+	Lists   ListLookup
+	Rep     ReputationLookup
 	Sandbox LinkSandbox
-	LLM    *domain.LLMExplain // set before the semantic stage
+	LLM     *domain.LLMExplain // set before the semantic stage
 }
 
 // Check is one heuristic.

@@ -14,10 +14,14 @@ const (
 	IDUrgency           = "content.urgency"            // C-01
 	IDThreat            = "content.threat"             // C-01
 	IDCredentialRequest = "content.credential_request" // C-02
+	IDSMSCodeRequest    = "content.sms_code_request"   // C-02
+	IDCardDataRequest   = "content.card_data_request"  // C-02
 	IDGenericGreeting   = "content.generic_greeting"   // C-03
 	IDLanguageMismatch  = "content.language_mismatch"  // C-04
 	IDBECPattern        = "content.bec_pattern"        // C-05
 	IDFinanceRequest    = "content.finance_request"    // C-06
+	IDBankDetailChange  = "content.bank_detail_change" // C-06
+	IDKZIdentifier      = "content.kz_identifier"      // C-06
 	IDHiddenText        = "content.hidden_text"        // C-07
 	IDImageOnly         = "content.image_only"         // C-08
 )
@@ -25,12 +29,17 @@ const (
 // Register adds content checks.
 func Register(r *signals.Registry) {
 	r.Register(
-		signals.NewFunc(IDUrgency, domain.CategoryContent, urgencyThreat),
+		signals.NewFunc(IDUrgency, domain.CategoryContent, urgencyOnly),
+		signals.NewFunc(IDThreat, domain.CategoryContent, threatOnly),
 		signals.NewFunc(IDCredentialRequest, domain.CategoryContent, credentialRequest),
+		signals.NewFunc(IDSMSCodeRequest, domain.CategoryContent, smsCodeRequest),
+		signals.NewFunc(IDCardDataRequest, domain.CategoryContent, cardDataRequest),
 		signals.NewFunc(IDGenericGreeting, domain.CategoryContent, genericGreeting),
 		signals.NewFunc(IDLanguageMismatch, domain.CategoryContent, languageMismatch),
 		signals.NewFunc(IDBECPattern, domain.CategoryContent, becPattern),
 		signals.NewFunc(IDFinanceRequest, domain.CategoryContent, financeRequest),
+		signals.NewFunc(IDBankDetailChange, domain.CategoryContent, bankDetailChange),
+		signals.NewFunc(IDKZIdentifier, domain.CategoryContent, kzIdentifier),
 		signals.NewFunc(IDHiddenText, domain.CategoryContent, hiddenText),
 		signals.NewFunc(IDImageOnly, domain.CategoryContent, imageOnly),
 	)

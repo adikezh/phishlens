@@ -96,6 +96,13 @@ that require external accounts, providers, or deployment-specific decisions.
 - Reputation HTTP/DNS/RDAP providers now have per-provider circuit breakers
   (three failures, 30-second cooldown) and a privacy-safe persistent cache with
   TTL across application restarts.
+- H-04 own authentication fallback is implemented for raw EML without
+  `Authentication-Results`: SPF on the first external `Received` IP, DKIM DNS
+  verification, and DMARC policy/alignment. DNS outages remain unknown and are
+  reported as degraded analysis warnings.
+- The deterministic registry now contains 60 separately registered checks,
+  including specialized SMS/card, invoice-fraud, cloud-form, data-URI, and
+  Received-route evidence; each new check has a localized explanation and test.
 
 ## Community v1 gates still to close
 

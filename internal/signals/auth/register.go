@@ -1,9 +1,7 @@
 // Package auth implements H-04: SPF / DKIM / DMARC outcomes from the
 // Authentication-Results header, plus the −40 "aligned official brand" rule (F-4.5.3).
-//
-// TODO(H-04): own checks when the header is absent (auth_checks.own_spf_dkim_dmarc):
-// SPF via blitiri.com.ar/go/spf on the first Received IP, DKIM via emersion/go-msgauth,
-// DMARC policy lookup via miekg/dns. Results must set AuthResults.Source = "own".
+// When the header is absent, internal/authcheck populates AuthResults.Source
+// with "own" before these signal checks run.
 package auth
 
 import (

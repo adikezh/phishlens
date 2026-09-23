@@ -7,6 +7,7 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
+	"github.com/phishlens/phishlens/internal/authcheck"
 	"github.com/phishlens/phishlens/internal/domain"
 	"github.com/phishlens/phishlens/internal/i18n"
 	"github.com/phishlens/phishlens/internal/llm"
@@ -101,6 +102,17 @@ func (an *Analyzer) Analyze(ctx context.Context, req Request) (*domain.Submissio
 		return nil, parse.ErrEmpty
 	}
 	sub.Message = mail
+
+	// H-04 fallback: only inspect the message with our own DNS/DKIM checks when
+	// no upstream Authentication-Results header is present. A configured
+	// provider result remains authoritative and is never overwritten.
+	if a.OwnAuthEnabled && mail.AuthResults.Source == "" && len(mail.Raw) > 0 {
+		stage("auth_own", func() error {
+			ar, err := authcheck.Verify(ctx, mail, a.OwnAuth)
+			mail.AuthResults = ar
+			return err
+		})
+	}
 
 	// 2. brand
 	var brand *domain.BrandMatch

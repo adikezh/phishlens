@@ -16,6 +16,7 @@ const (
 	IDMessageIDMissing   = "header.messageid_missing"    // H-06
 	IDDateSkew           = "header.date_skew"            // H-08
 	IDReceivedIPListed   = "header.received_ip_listed"   // H-05
+	IDReceivedPrivateIP  = "header.received_private_ip"  // H-05 hygiene
 	IDBulkMailer         = "header.bulk_mailer_personal" // H-07
 )
 
@@ -25,9 +26,11 @@ func Register(r *signals.Registry) {
 		signals.NewFunc(IDDisplayNameEmail, domain.CategoryHeader, displayNameEmail),
 		signals.NewFunc(IDReplyToMismatch, domain.CategoryHeader, replyToMismatch),
 		signals.NewFunc(IDReturnPathMismatch, domain.CategoryHeader, returnPathMismatch),
-		signals.NewFunc(IDMessageIDMismatch, domain.CategoryHeader, messageID),
+		signals.NewFunc(IDMessageIDMismatch, domain.CategoryHeader, messageIDMismatch),
+		signals.NewFunc(IDMessageIDMissing, domain.CategoryHeader, messageIDMissing),
 		signals.NewFunc(IDDateSkew, domain.CategoryHeader, dateSkew),
 		signals.NewFunc(IDReceivedIPListed, domain.CategoryHeader, receivedIPListed),
+		signals.NewFunc(IDReceivedPrivateIP, domain.CategoryHeader, receivedPrivateIP),
 		signals.NewFunc(IDBulkMailer, domain.CategoryHeader, bulkMailerPersonal),
 	)
 }

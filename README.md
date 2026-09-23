@@ -66,7 +66,10 @@ weights to -100..100. Review the output before using it as a pilot override.
 
 ## Что работает локально
 
-- `analyze --text/--file` — парсинг `.eml`/текста, 38 проверок, ru/en/kz объяснения, скоринг, вердикт, JSON-вывод.
+- `analyze --text/--file` — парсинг `.eml`/текста, зарегистрированные проверки,
+  ru/en/kz объяснения, скоринг, вердикт, JSON-вывод; при отсутствии
+  `Authentication-Results` для EML включается собственная SPF/DKIM/DMARC
+  DNS-проверка.
 - `serve` — `POST /v1/analyze`, `GET /v1/analyses/{id}`, очередь и review actions,
   списки, бренды, `/health`, `/metrics`, UI на `/` и `/ui/{queue,campaigns,dashboard,brands}`.
 - `batch` / `eval` — прогон корпуса и precision/recall/F1 по золотым вердиктам (`--min-f1` для CI; три демо — macro-F1 = 1.0, это не production benchmark).
@@ -74,8 +77,7 @@ weights to -100..100. Review the output before using it as a pilot override.
 
 ## Что не входит в подтверждённый Community v1
 
-PDF/OCR/vision без отдельного backend, собственная проверка
-SPF/DKIM/DMARC по DNS, RDAP/TI-источники, sandbox (chromedp), IMAP/Graph/Telegram,
+PDF/OCR/vision без отдельного backend, live-провайдеры и sandbox (chromedp), IMAP/Graph/Telegram,
 OIDC и hosted add-in validation. Они явно возвращают ошибку или
 degraded warning и не маскируются под успешный анализ. См. [TODO.md](TODO.md).
 

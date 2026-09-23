@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/phishlens/phishlens/data"
+	"github.com/phishlens/phishlens/internal/authcheck"
 	"github.com/phishlens/phishlens/internal/brands"
 	"github.com/phishlens/phishlens/internal/buildinfo"
 	"github.com/phishlens/phishlens/internal/config"
@@ -38,20 +39,22 @@ type Options struct {
 
 // App is the composition root.
 type App struct {
-	Cfg      *config.Config
-	Log      zerolog.Logger
-	License  *license.License
-	Data     *refdata.Data
-	Brands   *brands.Matcher
-	Registry *signals.Registry
-	Parser   *parse.Parser
-	Rep      *reputation.Client
-	Sandbox  sandbox.Runner
-	LLM      *llm.Service
-	Score    *score.Engine
-	Store    store.Store
-	Notify   *notify.Fanout
-	Analyzer *Analyzer
+	Cfg            *config.Config
+	Log            zerolog.Logger
+	License        *license.License
+	Data           *refdata.Data
+	Brands         *brands.Matcher
+	Registry       *signals.Registry
+	Parser         *parse.Parser
+	Rep            *reputation.Client
+	OwnAuth        authcheck.Resolver
+	OwnAuthEnabled bool
+	Sandbox        sandbox.Runner
+	LLM            *llm.Service
+	Score          *score.Engine
+	Store          store.Store
+	Notify         *notify.Fanout
+	Analyzer       *Analyzer
 }
 
 // New builds the application.
@@ -104,6 +107,8 @@ func New(ctx context.Context, cfg *config.Config, log zerolog.Logger, opts Optio
 
 	if !opts.Offline {
 		a.Rep = reputation.New(cfg.Reputation, cfg.AuthChecks.DNSResolver, log)
+		a.OwnAuth = authcheck.NewResolver(cfg.AuthChecks.DNSResolver)
+		a.OwnAuthEnabled = cfg.AuthChecks.OwnSPFDKIMDMARC
 		if cfg.Sandbox.Enabled {
 			a.Sandbox = sandbox.New(cfg.Sandbox.URL, cfg.Sandbox.Screenshot)
 		}

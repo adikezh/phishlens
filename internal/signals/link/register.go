@@ -18,18 +18,23 @@ const (
 	IDTrackingPixel    = "link.tracking_pixel"      // L-07
 	IDMissingUnsub     = "link.missing_unsubscribe" // L-07
 	IDLoginForm        = "link.login_form"          // L-05
+	IDCloudForm        = "link.cloud_form"          // L-06
+	IDDataURI          = "link.data_uri"            // L-04
 )
 
 // Register adds link checks.
 func Register(r *signals.Registry) {
 	r.Register(
 		signals.NewFunc(IDTextHrefMismatch, domain.CategoryLink, textHrefMismatch),
-		signals.NewFunc(IDIPHost, domain.CategoryLink, ipHost),
+		signals.NewFunc(IDIPHost, domain.CategoryLink, ipOnly),
+		signals.NewFunc(IDNonstandardPort, domain.CategoryLink, nonstandardPortOnly),
 		signals.NewFunc(IDShortener, domain.CategoryLink, shortener),
 		signals.NewFunc(IDObfuscated, domain.CategoryLink, obfuscated),
+		signals.NewFunc(IDDataURI, domain.CategoryLink, dataURI),
 		signals.NewFunc(IDPunycode, domain.CategoryLink, punycode),
 		signals.NewFunc(IDBrandLookalike, domain.CategoryLink, brandLookalike),
 		signals.NewFunc(IDManyDomains, domain.CategoryLink, manyDomains),
+		signals.NewFunc(IDCloudForm, domain.CategoryLink, cloudForm),
 		signals.NewFunc(IDTrackingPixel, domain.CategoryLink, trackingPixel),
 		signals.NewFunc(IDMissingUnsub, domain.CategoryLink, missingUnsubscribe),
 		signals.NewFunc(IDLoginForm, domain.CategoryLink, loginForm),

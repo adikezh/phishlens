@@ -30,7 +30,7 @@ analysis:
   custom_brands_enabled: true
 
 auth_checks:
-  own_spf_dkim_dmarc: true   # если нет Authentication-Results — собственная проверка (TODO H-04)
+  own_spf_dkim_dmarc: true   # если нет Authentication-Results — SPF/DKIM/DMARC по DNS
   dns_resolver: "1.1.1.1:53"
 
 reputation:

@@ -242,6 +242,9 @@ type PDFInfo struct {
 
 // ParsedMail is the normalised representation every input converges to.
 type ParsedMail struct {
+	// Raw is kept only for in-process authentication checks. It is intentionally
+	// excluded from JSON/storage so Community mode never persists the message.
+	Raw         []byte              `json:"-"`
 	Headers     map[string][]string `json:"headers,omitempty"`
 	From        Address             `json:"from"`
 	ReplyTo     Address             `json:"reply_to,omitempty"`

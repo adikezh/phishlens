@@ -40,7 +40,7 @@ func (p *Parser) EML(data []byte) (*domain.ParsedMail, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse eml: %w", err)
 	}
-	pm := &domain.ParsedMail{Headers: map[string][]string{}}
+	pm := &domain.ParsedMail{Raw: append([]byte(nil), data...), Headers: map[string][]string{}}
 	for k, v := range msg.Header {
 		pm.Headers[k] = v
 	}
