@@ -170,7 +170,7 @@ that require external accounts, providers, or deployment-specific decisions.
 - Pilot evidence: one organization, two weeks, at least 20 real submissions,
   measured false positives/negatives, and owner-approved weight changes.
 - Public HTTPS demo remains open. Registry publication is closed for the
-  current Community release: `ghcr.io/adikezh/phishlens:v0.2.3` is published
+  current Community release: `ghcr.io/adikezh/phishlens:v0.2.4` is published
   and its `/health` endpoint was verified from the pulled image.
 - Periodic reports now persist department and review timestamps and include
   department breakdowns plus average review time; reaction-time interpretation
@@ -182,6 +182,7 @@ Every release must record the exact commit, Go version, test commands and
 results, dependency/security scan output, container digest, configuration
 defaults, and the external gates that remain unverified. A green local test is
 not evidence for hosted-provider behavior or production readiness. The
-`v0.2.2` and `v0.2.3` records are maintained in
+`v0.2.2`, `v0.2.3`, and `v0.2.4` records are maintained in
 [`docs/releases/v0.2.2.md`](docs/releases/v0.2.2.md) and
-[`docs/releases/v0.2.3.md`](docs/releases/v0.2.3.md).
+[`docs/releases/v0.2.3.md`](docs/releases/v0.2.3.md) and
+[`docs/releases/v0.2.4.md`](docs/releases/v0.2.4.md).
