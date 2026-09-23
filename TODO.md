@@ -7,8 +7,8 @@ that require external accounts, providers, or deployment-specific decisions.
 
 - Go build succeeds with Go 1.26.7 on Windows amd64.
 - `go test ./...` passes.
-- The deterministic demo corpus contains three EML messages and passes
-  `phishlens eval` with macro-F1 1.00.
+- The deterministic corpus contains 203 EML messages (3 demos plus 200
+  synthetic variants) and passes `phishlens eval` with macro-F1 1.00.
 - CLI text/EML analysis works without an LLM and keeps reputation failures as
   explicit degradation warnings.
 - The HTTP service exposes `/health`, `/metrics`, `/v1/analyze`, analysis
@@ -96,8 +96,10 @@ that require external accounts, providers, or deployment-specific decisions.
 
 ## Community v1 gates still to close
 
-- [ ] Add a larger, licensed/synthetic regression corpus before making any
-  accuracy claim beyond the three demo messages.
+- [x] Add a reproducible synthetic regression corpus of 200 variants; its
+  macro-F1 is a deterministic harness result, not a production accuracy claim.
+- [ ] Add licensed/publicly sourced cases with provenance before making a
+  real-world accuracy claim.
 - [x] Black-box API/UI E2E script against a started server covers persistence,
   retrieval, user-vs-admin queue RBAC, deletion, and browser-visible admin key
   loading. Verified locally on 2026-09-23 with `python scripts/ui_smoke.py

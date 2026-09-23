@@ -1,0 +1,11 @@
+From: "Kaspi" <noreply@kaspi.kz>
+To: employee086@company.example
+Subject: Выписка по счёту за август 086
+Date: Wed, 2 Sep 2026 08:26:00 +0500
+Message-ID: <synthetic-clean-086@kaspi.kz>
+Authentication-Results: mx.company.example; spf=pass smtp.mailfrom=kaspi.kz; dkim=pass header.d=kaspi.kz; dmarc=pass
+Content-Type: text/plain; charset=utf-8
+
+Здравствуйте! Ваша ежемесячная выписка по счёту доступна в приложении Kaspi.
+Открыть приложение: https://kaspi.kz/account/086
+С уважением, Kaspi

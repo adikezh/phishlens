@@ -1,0 +1,11 @@
+From: "Kaspi Security" <alerts@kaspi-secure-040.example>
+To: employee040@company.example
+Reply-To: help040@protonmail.com
+Subject: Срочно: подтвердите аккаунт 040
+Date: Wed, 2 Sep 2026 08:40:00 +0500
+Message-ID: <synthetic-phish-040@kaspi-secure-040.example>
+Authentication-Results: mx.company.example; spf=fail smtp.mailfrom=kaspi-secure-040.example; dkim=fail; dmarc=fail
+Content-Type: text/plain; charset=utf-8
+
+Ваш аккаунт Kaspi заблокирован. Срочно подтвердите пароль и код SMS в течение 24 часов:
+https://kaspi.kz/verify/040 (https://kaspi-secure-040.example/verify/040)
