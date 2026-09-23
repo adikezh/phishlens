@@ -1,5 +1,9 @@
 # PhishLens
 
+> Accuracy boundary: the repository includes a deterministic synthetic
+> regression corpus, not a production-representative dataset. See
+> [corpus provenance](docs/corpus-provenance.md) before interpreting F1 results.
+
 > «Отправь письмо — получи вердикт и объяснение за 5 секунд».
 
 Self-hosted сервис анализа подозрительных писем: детерминированные проверки

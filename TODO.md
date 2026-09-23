@@ -116,7 +116,9 @@ that require external accounts, providers, or deployment-specific decisions.
 - [x] Add a reproducible synthetic regression corpus of 200 variants; its
   macro-F1 is a deterministic harness result, not a production accuracy claim.
 - [ ] Add licensed/publicly sourced cases with provenance before making a
-  real-world accuracy claim.
+  real-world accuracy claim. The source review and import requirements are
+  documented in `docs/corpus-provenance.md`; raw external messages remain
+  intentionally unvendored until licensing is confirmed.
 - [x] Black-box API/UI E2E script against a started server covers persistence,
   retrieval, user-vs-admin queue RBAC, deletion, and browser-visible admin key
   loading. Verified locally on 2026-09-23 with `python scripts/ui_smoke.py
