@@ -26,6 +26,8 @@ that require external accounts, providers, or deployment-specific decisions.
   non-root/read-only security controls, and optional existingSecret/Ingress.
 - Analyst API actions now support campaign grouping, blocklisting a domain from
   a submission, and local incident escalation with audit records.
+- `phishlens weights tune` now calibrates bounded signal weights from analyst
+  JSONL labels and writes a reproducible YAML override file.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
@@ -41,6 +43,8 @@ that require external accounts, providers, or deployment-specific decisions.
   accuracy claim beyond the three demo messages.
 - [ ] Add API/UI end-to-end tests against a started server, including upload
   limits, API-key roles, persistence, and deletion.
+- [x] Add deterministic local weight tuning from analyst labels; pilot owners
+  still must review and approve any tuned weights before deployment.
 - [x] Add fuzz tests for text/EML dispatch, HTML/URL extraction, and attachment listing paths.
 - [x] Docker Compose runtime smoke: init volume ownership, non-root image,
   read-only rootfs, no-new-privileges, and `/health` verified locally.

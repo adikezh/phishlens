@@ -50,6 +50,20 @@ data/                 brands.yaml, weights.yaml, словари, демо-пис
 docs/signals/         документация каждого сигнала
 ```
 
+`phishlens weights tune` calibrates signal weights from analyst JSONL labels:
+
+```json
+{"label":"phishing","signals":{"domain.brand_lookalike":1,"content.credential_request":0.8}}
+{"label":"clean","signals":{"content.urgency":0.5}}
+```
+
+```powershell
+phishlens weights tune --labels labels.jsonl --out weights.tuned.yaml
+```
+
+The tuner preserves thresholds, keeps unseen base signals, and bounds learned
+weights to -100..100. Review the output before using it as a pilot override.
+
 ## Что работает локально
 
 - `analyze --text/--file` — парсинг `.eml`/текста, 38 проверок, ru/en/kz объяснения, скоринг, вердикт, JSON-вывод.

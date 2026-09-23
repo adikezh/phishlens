@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 
 	"github.com/phishlens/phishlens/internal/app"
 	"github.com/phishlens/phishlens/internal/brands"
@@ -17,6 +19,7 @@ import (
 	"github.com/phishlens/phishlens/internal/crypto"
 	"github.com/phishlens/phishlens/internal/httpapi"
 	"github.com/phishlens/phishlens/internal/report"
+	"github.com/phishlens/phishlens/internal/score"
 	"github.com/phishlens/phishlens/internal/store"
 )
 
@@ -338,11 +341,43 @@ func newWeightsCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "weights", Short: "Веса сигналов"}
 	var labels, out string
 	tune := &cobra.Command{
-		Use: "tune", Short: "Калибровка весов по меткам аналитиков (TODO F-4.6.4)",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			_ = labels
-			_ = out
-			return errNotImplemented
+		Use: "tune", Short: "Калибровка весов по меткам аналитиков",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cfg, _, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			weightsPath := cfg.Analysis.WeightsFile
+			if weightsPath == "" {
+				weightsPath = filepath.Join(cfg.Analysis.DataDir, "weights.yaml")
+			}
+			baseFile, err := os.Open(weightsPath)
+			if err != nil {
+				return fmt.Errorf("weights: open base %s: %w", weightsPath, err)
+			}
+			base, err := score.LoadWeights(baseFile)
+			_ = baseFile.Close()
+			if err != nil {
+				return err
+			}
+			labelFile, err := os.Open(labels)
+			if err != nil {
+				return fmt.Errorf("weights: open labels: %w", err)
+			}
+			tuned, count, err := score.Tune(labelFile, base)
+			_ = labelFile.Close()
+			if err != nil {
+				return err
+			}
+			data, err := yaml.Marshal(tuned)
+			if err != nil {
+				return fmt.Errorf("weights: encode: %w", err)
+			}
+			if err := os.WriteFile(out, data, 0o644); err != nil {
+				return fmt.Errorf("weights: write %s: %w", out, err)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "tuned %d labels into %s\n", count, out)
+			return nil
 		},
 	}
 	tune.Flags().StringVar(&labels, "labels", "labels.jsonl", "метки")
