@@ -15,6 +15,8 @@ services:
     environment:
       PL_STORAGE_DSN: "file:/app/var/phishlens.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
       PL_LOG_PRETTY: "false"
+      PL_OCR_MODE: "${PL_OCR_MODE:-off}"
+      PL_OCR_TESSERACT_URL: "${PL_OCR_TESSERACT_URL:-http://ocr:8090}"
       # PL_LLM_ENABLED: "true"
       # OPENROUTER_KEY: ${OPENROUTER_KEY}
       # ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
@@ -36,9 +38,17 @@ services:
   #   volumes: ["ollama:/root/.ollama"]
   #   # docker compose exec ollama ollama pull qwen2.5:14b
 
-  # ocr:                                   # deploy/ocr — tesseract (ru/en/kaz) HTTP-обёртка
-  #   build: ./ocr
-  #   ports: ["8090:8090"]
+  ocr:                                   # включается профилем: docker compose --profile ocr up
+    profiles: ["ocr"]
+    build: ./ocr
+    environment:
+      OCR_LANG: "eng+rus+kaz"
+      OCR_MAX_IMAGE_BYTES: "26214400"
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    ports: ["8090:8090"]
 
   # sandbox:                               # deploy/sandbox — headless Chromium (Business)
   #   build: ./sandbox

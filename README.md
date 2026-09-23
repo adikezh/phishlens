@@ -60,6 +60,7 @@ internal/httpapi      REST /v1/* (chi), /health, /metrics
 internal/web          UI анализа + очередь/кампании/дашборд/бренды (html/template + htmx)
 internal/notify       webhook (HMAC), Wazuh, TheHive, IRIS, Jira, SMTP reply
 internal/ingest       IMAP / Graph / Telegram приёмники с bounded polling
+deploy/ocr            локальный Tesseract OCR HTTP-контейнер (ru/en/kz)
 data/                 brands.yaml, weights.yaml, словари, демо-письма
 docs/signals/         документация каждого сигнала
 ```
@@ -104,9 +105,10 @@ Performance acceptance is documented in [performance.md](docs/performance.md).
 
 ## Что не входит в подтверждённый Community v1
 
-PDF/OCR/vision без отдельного backend, live-провайдеры и sandbox (chromedp), IMAP/Graph/Telegram,
+PDF/vision без отдельного backend, live-провайдеры и sandbox (chromedp), IMAP/Graph/Telegram,
 OIDC и hosted add-in validation. Они явно возвращают ошибку или
-degraded warning и не маскируются под успешный анализ. См. [TODO.md](TODO.md).
+degraded warning и не маскируются под успешный анализ. Локальный OCR-контейнер
+описан в [ocr.md](docs/ocr.md). См. [TODO.md](TODO.md).
 
 ## Лицензия
 

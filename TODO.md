@@ -89,6 +89,10 @@ that require external accounts, providers, or deployment-specific decisions.
   pixels, brand matching consumes configured `logo_phash`, and external OCR
   receives a re-encoded PNG without source EXIF metadata. Curated logo assets
   and colour-scheme matching remain data/product gates.
+- A local `deploy/ocr` Tesseract adapter is now implemented and tested with
+  Russian, English, and Kazakh language packs. The Compose profile, health
+  endpoint, bounded image input, timeout, and degraded-main-service behavior
+  are covered; multilingual OCR quality still needs a representative corpus.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
@@ -138,8 +142,9 @@ that require external accounts, providers, or deployment-specific decisions.
 - [x] Docker Compose runtime smoke: init volume ownership, non-root image,
   read-only rootfs, no-new-privileges, and `/health` verified locally.
 - [x] Community PDF static analysis: bounded URL/text extraction and active
-  feature detection without rendering or executing PDF actions. PDF OCR remains
-  an optional OCR/Business extension.
+  feature detection without rendering or executing PDF actions. Local Tesseract
+  OCR is available as an optional OCR/Business extension; multilingual quality
+  remains an external gate.
 - [x] Add a reproducible local landing/demo artifact: browser-captured GIF,
   architecture scheme, and an explicitly qualified comparison table.
 
