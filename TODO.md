@@ -137,6 +137,8 @@ that require external accounts, providers, or deployment-specific decisions.
 - [x] Community PDF static analysis: bounded URL/text extraction and active
   feature detection without rendering or executing PDF actions. PDF OCR remains
   an optional OCR/Business extension.
+- [x] Add a reproducible local landing/demo artifact: browser-captured GIF,
+  architecture scheme, and an explicitly qualified comparison table.
 
 ## Business / external gates (not locally provable)
 

@@ -58,7 +58,7 @@ internal/score        веса, пороги, жёсткие правила, в�
 internal/store        SQLite (modernc) / PostgreSQL (pgx), миграции
 internal/httpapi      REST /v1/* (chi), /health, /metrics
 internal/web          UI анализа + очередь/кампании/дашборд/бренды (html/template + htmx)
-internal/notify       webhook (HMAC), Wazuh, TheHive, SMTP reply
+internal/notify       webhook (HMAC), Wazuh, TheHive, IRIS, Jira, SMTP reply
 internal/ingest       IMAP / Graph / Telegram приёмники с bounded polling
 data/                 brands.yaml, weights.yaml, словари, демо-письма
 docs/signals/         документация каждого сигнала
@@ -80,6 +80,11 @@ weights to -100..100. Review the output before using it as a pilot override.
 
 Продуктовая landing-страница доступна локально на `/landing`; интерактивное
 демо проверки — на `/`.
+
+![Локальное демо PhishLens](docs/assets/phishlens-demo.gif)
+
+Схема конвейера и границы компонентов описаны в [architecture.md](docs/architecture.md),
+а сравнение с PhishTool, CheckPhish и Sublime — на `/landing`.
 
 ## Что работает локально
 
