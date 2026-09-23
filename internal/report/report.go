@@ -16,6 +16,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/phishlens/phishlens/internal/domain"
 	"github.com/phishlens/phishlens/internal/store"
 )
 
@@ -35,6 +36,8 @@ func Generate(ctx context.Context, st store.Store, orgID string, since time.Time
 		return docx(stats)
 	case "pdf":
 		return pdf(stats), nil
+	case "awareness", "html":
+		return ExportAwareness(ctx, st, orgID, since)
 	default:
 		return nil, fmt.Errorf("report: unknown format %q", format)
 	}
@@ -62,6 +65,8 @@ func reportLines(s *store.Stats) []string {
 	for _, nc := range s.TopSignals {
 		lines = append(lines, fmt.Sprintf("%s: %d", nc.Name, nc.Count))
 	}
+	lines = append(lines, "", "Top tactics:")
+	lines = appendSortedCounts(lines, tacticCounts(s.TopSignals))
 	lines = append(lines, "", fmt.Sprintf("Average analysis time: %d ms", s.AvgDuration))
 	return lines
 }
@@ -191,9 +196,128 @@ func markdown(s *store.Stats) string {
 	for _, nc := range s.TopSignals {
 		fmt.Fprintf(&b, "- `%s` — %d\n", nc.Name, nc.Count)
 	}
+	b.WriteString("\n## Топ тактик\n\n")
+	for name, count := range tacticCounts(s.TopSignals) {
+		fmt.Fprintf(&b, "- %s — %d\n", name, count)
+	}
 	fmt.Fprintf(&b, "\nСреднее время анализа: %d мс\n", s.AvgDuration)
-	// TODO(F-4.8.1): reaction time, departments (needs users/orgs), top tactics (LLM).
 	return b.String()
+}
+
+// tacticCounts derives stable awareness categories from deterministic signals.
+// LLM tactic labels are intentionally not required for this report path.
+func tacticCounts(signals []store.NameCount) map[string]int {
+	out := map[string]int{}
+	for _, signal := range signals {
+		name := "other"
+		switch {
+		case strings.Contains(signal.Name, "credential") || strings.Contains(signal.Name, "sms_code") || strings.Contains(signal.Name, "card_data") || strings.Contains(signal.Name, "login_form"):
+			name = "credential_harvesting"
+		case strings.Contains(signal.Name, "bec") || strings.Contains(signal.Name, "displayname") || strings.Contains(signal.Name, "replyto"):
+			name = "authority_impersonation"
+		case strings.Contains(signal.Name, "urgency") || strings.Contains(signal.Name, "threat"):
+			name = "urgency_and_fear"
+		case strings.Contains(signal.Name, "attachment") || strings.Contains(signal.Name, "macro") || strings.Contains(signal.Name, "archive"):
+			name = "malicious_attachment"
+		case strings.Contains(signal.Name, "finance") || strings.Contains(signal.Name, "bank_detail"):
+			name = "invoice_fraud"
+		}
+		out[name] += signal.Count
+	}
+	return out
+}
+
+// AwarenessCard is an anonymised training example. It contains no address,
+// subject, body, submission ID, or raw evidence.
+type AwarenessCard struct {
+	Verdict    string   `json:"verdict"`
+	AttackType string   `json:"attack_type,omitempty"`
+	Brand      string   `json:"brand,omitempty"`
+	Score      int      `json:"score"`
+	Signals    []string `json:"signals"`
+	Lessons    []string `json:"lessons"`
+}
+
+// BuildAwarenessCards converts confirmed cases to privacy-safe examples.
+func BuildAwarenessCards(submissions []*domain.Submission) []AwarenessCard {
+	cards := make([]AwarenessCard, 0, len(submissions))
+	for _, sub := range submissions {
+		if sub == nil || sub.Status != domain.StatusConfirmedPhish || sub.Result == nil {
+			continue
+		}
+		card := AwarenessCard{Verdict: string(sub.Result.Verdict), Score: sub.Result.Score, AttackType: string(sub.Result.AttackType)}
+		if sub.Result.Brand != nil {
+			card.Brand = sub.Result.Brand.Name
+		}
+		seen := map[string]bool{}
+		for _, signal := range sub.Result.Signals {
+			if seen[signal.ID] {
+				continue
+			}
+			seen[signal.ID] = true
+			card.Signals = append(card.Signals, signal.ID)
+			card.Lessons = append(card.Lessons, lessonForSignal(signal.ID))
+			if len(card.Signals) >= 8 {
+				break
+			}
+		}
+		cards = append(cards, card)
+	}
+	return cards
+}
+
+func lessonForSignal(id string) string {
+	switch {
+	case strings.Contains(id, "credential") || strings.Contains(id, "sms_code") || strings.Contains(id, "card_data") || strings.Contains(id, "login_form"):
+		return "Never enter passwords, SMS codes, or card data from an email link."
+	case strings.Contains(id, "attachment") || strings.Contains(id, "macro"):
+		return "Treat unexpected attachments as unsafe and verify through a known channel."
+	case strings.Contains(id, "urgency") || strings.Contains(id, "threat"):
+		return "Urgency and threats are pressure tactics; pause and verify independently."
+	default:
+		return "Inspect the sender, authentication, and destination before acting."
+	}
+}
+
+// ExportAwareness emits self-contained HTML cards without customer content.
+func ExportAwareness(ctx context.Context, st store.Store, orgID string, since time.Time) ([]byte, error) {
+	subs, err := st.ListSubmissions(ctx, store.SubmissionFilter{OrgID: orgID, Status: domain.StatusConfirmedPhish, Since: since, Limit: 500})
+	if err != nil {
+		return nil, err
+	}
+	return AwarenessHTML(BuildAwarenessCards(subs)), nil
+}
+
+// AwarenessHTML renders cards and escapes all dynamic values.
+func AwarenessHTML(cards []AwarenessCard) []byte {
+	var b strings.Builder
+	b.WriteString("<!doctype html><meta charset=\"utf-8\"><title>PhishLens awareness cards</title><main><h1>PhishLens: как распознать фишинг</h1>")
+	for i, card := range cards {
+		fmt.Fprintf(&b, "<article><h2>Пример %d: %s</h2><p>Риск: %d/100", i+1, html.EscapeString(card.Verdict), card.Score)
+		if card.AttackType != "" {
+			fmt.Fprintf(&b, " · Тип: %s", html.EscapeString(card.AttackType))
+		}
+		if card.Brand != "" {
+			fmt.Fprintf(&b, " · Бренд: %s", html.EscapeString(card.Brand))
+		}
+		b.WriteString("</p><h3>Что выдало письмо</h3><ul>")
+		for _, lesson := range card.Lessons {
+			fmt.Fprintf(&b, "<li>%s</li>", html.EscapeString(lesson))
+		}
+		b.WriteString("</ul><p><strong>Сигналы:</strong> ")
+		for i, signal := range card.Signals {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			fmt.Fprintf(&b, "<code>%s</code>", html.EscapeString(signal))
+		}
+		b.WriteString("</p></article>")
+	}
+	if len(cards) == 0 {
+		b.WriteString("<p>Подтверждённых примеров за период нет.</p>")
+	}
+	b.WriteString("</main>")
+	return []byte(b.String())
 }
 
 // ExportIOC exports privacy-safe indicators from confirmed phishing cases.

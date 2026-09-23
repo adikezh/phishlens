@@ -103,6 +103,10 @@ that require external accounts, providers, or deployment-specific decisions.
 - The deterministic registry now contains 60 separately registered checks,
   including specialized SMS/card, invoice-fraud, cloud-form, data-URI, and
   Received-route evidence; each new check has a localized explanation and test.
+- `phishlens report --format awareness` now exports HTML training cards from
+  confirmed phishing cases using only verdict, score, brand, signal IDs, and
+  generic lessons; message subjects, bodies, addresses, and submission IDs are
+  excluded.
 
 ## Community v1 gates still to close
 
@@ -138,6 +142,10 @@ that require external accounts, providers, or deployment-specific decisions.
 - Pilot evidence: one organization, two weeks, at least 20 real submissions,
   measured false positives/negatives, and owner-approved weight changes.
 - Public demo, registry publication, and operational backup/restore.
+- Periodic report still lacks persisted department and review timestamps for
+  exact reaction-time/department breakdowns; the current report includes
+  verdicts, statuses, attack types, derived tactics, brands, signals, and
+  average analysis latency.
 
 ## Required release evidence
 

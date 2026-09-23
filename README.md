@@ -73,6 +73,8 @@ weights to -100..100. Review the output before using it as a pilot override.
 - `serve` — `POST /v1/analyze`, `GET /v1/analyses/{id}`, очередь и review actions,
   списки, бренды, `/health`, `/metrics`, UI на `/` и `/ui/{queue,campaigns,dashboard,brands}`.
 - `batch` / `eval` — прогон корпуса и precision/recall/F1 по золотым вердиктам (`--min-f1` для CI; три демо — macro-F1 = 1.0, это не production benchmark).
+- `report --format awareness` — HTML-карточки для обучения сотрудников из
+  подтверждённых кейсов без адресов, тем и текста писем.
 - `migrate up`, `apikey create`, `lists allow|block add|list`.
 
 ## Что не входит в подтверждённый Community v1

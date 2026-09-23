@@ -63,6 +63,11 @@ analyzer updates that same stored resource.
 
 `data/`, `prompts/`, `migrations/`, `addins/` встроены через `embed.FS`; файлы на диске (`analysis.data_dir`, `weights_file`, `brands_file`, `prompts_dir`) имеют приоритет. Бинарь работает без внешних файлов.
 
+`phishlens report --format awareness` строит обезличенные HTML-карточки из
+подтверждённых кейсов: в экспорт не попадают тема, адреса, тело или ID
+обращения; остаются только вердикт, score, бренд, ограниченный список сигналов
+и общие уроки для сотрудника.
+
 ## Что заглушено
 
 См. `grep -rn "TODO(" internal/` — каждая заглушка ссылается на пункт ТЗ.

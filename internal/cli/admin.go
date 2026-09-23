@@ -272,7 +272,7 @@ func newBrandsCmd() *cobra.Command {
 func newReportCmd() *cobra.Command {
 	var period, format, out, org string
 	cmd := &cobra.Command{
-		Use: "report", Short: "Отчёт за период (md/docx/pdf)",
+		Use: "report", Short: "Отчёт за период (md/docx/pdf/awareness)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			d, err := periodDuration(period)
 			if err != nil {
@@ -295,7 +295,7 @@ func newReportCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&period, "period", "month", "day|week|month|quarter или 30d")
-	cmd.Flags().StringVar(&format, "format", "md", "md|docx|pdf")
+	cmd.Flags().StringVar(&format, "format", "md", "md|docx|pdf|awareness (HTML cards)")
 	cmd.Flags().StringVar(&out, "out", "-", "файл")
 	cmd.Flags().StringVar(&org, "org", "", "org id")
 	return cmd

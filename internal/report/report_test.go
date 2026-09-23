@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/phishlens/phishlens/internal/domain"
 	"github.com/phishlens/phishlens/internal/store"
 )
 
@@ -51,4 +52,16 @@ func TestPDFReportHasCrossReference(t *testing.T) {
 func TestPDFASCIIEscapesSyntax(t *testing.T) {
 	require.Equal(t, `a\(b\)\\c`, pdfASCII(`a(b)\c`))
 	require.True(t, strings.Contains(string(pdf(sampleStats())), "%%EOF"))
+}
+
+func TestAwarenessHTMLContainsNoRawCustomerContent(t *testing.T) {
+	cards := BuildAwarenessCards([]*domain.Submission{{
+		Status:  domain.StatusConfirmedPhish,
+		Message: &domain.ParsedMail{Subject: "secret customer subject"},
+		Result:  &domain.Analysis{Verdict: domain.VerdictPhishing, Score: 91, Signals: []domain.Signal{{ID: "content.credential_request"}}},
+	}})
+	b := AwarenessHTML(cards)
+	require.Contains(t, string(b), "content.credential_request")
+	require.NotContains(t, string(b), "secret customer subject")
+	require.NotContains(t, string(b), "submission")
 }
