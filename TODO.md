@@ -31,8 +31,8 @@ that require external accounts, providers, or deployment-specific decisions.
 - [ ] Add API/UI end-to-end tests against a started server, including upload
   limits, API-key roles, persistence, and deletion.
 - [ ] Add fuzz tests for EML, HTML, URL, and attachment listing paths.
-- [ ] Add a production deployment smoke test for Docker Compose and verify the
-  image is non-root and read-only at runtime.
+- [x] Docker Compose runtime smoke: init volume ownership, non-root image,
+  read-only rootfs, no-new-privileges, and `/health` verified locally.
 - [ ] Decide whether PDF OCR belongs in Community or is a licensed Business
   component; do not silently treat unsupported formats as analysed.
 

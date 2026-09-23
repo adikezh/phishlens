@@ -1,6 +1,13 @@
 # docker compose up → демо на http://localhost:8082 с тремя примерами.
 # LLM: раскомментируйте ollama или задайте OPENROUTER_KEY / ANTHROPIC_API_KEY и включите llm.enabled.
 services:
+  init-data:
+    image: alpine:3.22@sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8
+    command: ["sh", "-c", "mkdir -p /app/var && chown -R 65532:65532 /app/var"]
+    user: "0:0"
+    volumes:
+      - phishlens-data:/app/var
+
   phishlens:
     build: ..
     image: ghcr.io/phishlens/phishlens:latest
@@ -14,6 +21,9 @@ services:
       # PL_ENC_KEY: ${PL_ENC_KEY}          # phishlens keygen
     volumes:
       - phishlens-data:/app/var
+    depends_on:
+      init-data:
+        condition: service_completed_successfully
     read_only: true
     tmpfs: ["/tmp"]
     security_opt: ["no-new-privileges:true"]
