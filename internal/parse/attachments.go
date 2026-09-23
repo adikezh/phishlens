@@ -13,13 +13,15 @@ import (
 
 	"github.com/bodgit/sevenzip"
 	"github.com/phishlens/phishlens/internal/domain"
+	"github.com/richardlehane/mscfb"
 )
 
 var (
-	archiveExts = map[string]bool{"zip": true, "rar": true, "7z": true, "gz": true, "tgz": true, "tar": true, "iso": true, "img": true, "cab": true, "arj": true}
-	macroExts   = map[string]bool{"docm": true, "xlsm": true, "pptm": true, "dotm": true, "xltm": true, "potm": true}
-	ooxmlExts   = map[string]bool{"docx": true, "xlsx": true, "pptx": true, "docm": true, "xlsm": true, "pptm": true, "dotm": true, "xltm": true}
-	reScriptTag = regexp.MustCompile(`(?i)<script\b|<form\b|<iframe\b|javascript:`)
+	archiveExts   = map[string]bool{"zip": true, "rar": true, "7z": true, "gz": true, "tgz": true, "tar": true, "iso": true, "img": true, "cab": true, "arj": true}
+	macroExts     = map[string]bool{"docm": true, "xlsm": true, "pptm": true, "dotm": true, "xltm": true, "potm": true}
+	ooxmlExts     = map[string]bool{"docx": true, "xlsx": true, "pptx": true, "docm": true, "xlsm": true, "pptm": true, "dotm": true, "xltm": true}
+	oleOfficeExts = map[string]bool{"doc": true, "xls": true, "ppt": true, "dot": true, "xlt": true, "pot": true}
+	reScriptTag   = regexp.MustCompile(`(?i)<script\b|<form\b|<iframe\b|javascript:`)
 )
 
 // attachmentFrom builds metadata: hash, extension, archive listing, OOXML macro
@@ -53,16 +55,38 @@ func (p *Parser) attachmentFrom(name, mime string, content []byte) domain.Attach
 		a.NestedNames, a.PasswordProtected = listRAR(content, p.Limits.MaxArchiveNames)
 	case a.Ext == "7z":
 		a.NestedNames, a.PasswordProtected = list7z(content, p.Limits.MaxArchiveNames)
+	case oleOfficeExts[a.Ext]:
+		a.MacroDetected = oleHasVBA(content)
 	case a.Ext == "html" || a.Ext == "htm" || a.Ext == "shtml" || strings.Contains(mime, "html"):
 		a.HasActiveContent = reScriptTag.Match(content)
 	}
 	if macroExts[a.Ext] {
 		a.MacroDetected = true
 	}
-	// TODO(A-03): legacy OLE .doc/.xls — richardlehane/mscfb + VBA stream search.
 	// PDF static analysis is handled by ParsePDF; this path only dispatches
 	// generic attachment metadata and must not render or execute PDF content.
 	return a
+}
+
+// oleHasVBA inspects only the compound-file directory tree. It does not open
+// or execute a stream, so legacy Office macro detection stays metadata-only.
+func oleHasVBA(content []byte) bool {
+	if len(content) < len(cfbMagic) || !bytes.Equal(content[:len(cfbMagic)], cfbMagic) {
+		return false
+	}
+	r, err := mscfb.New(bytes.NewReader(content))
+	if err != nil {
+		return false
+	}
+	for f, nextErr := r.Next(); nextErr == nil && f != nil; f, nextErr = r.Next() {
+		for _, component := range append([]string{f.Name}, f.Path...) {
+			name := strings.ToLower(component)
+			if name == "vba" || strings.HasPrefix(name, "_vba_project") || name == "dir" || name == "project" || name == "projectwm" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Ext returns the lowercase final extension without the dot.

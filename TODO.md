@@ -46,6 +46,8 @@ that require external accounts, providers, or deployment-specific decisions.
   archives remain explicit signals and archive executable names are inspected.
   RAR5 is intentionally opaque because safe metadata-only parsing is not yet
   implemented.
+- A-03 detects VBA directory markers in legacy OLE Office attachments without
+  opening or executing macro streams.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.

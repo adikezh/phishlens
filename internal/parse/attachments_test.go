@@ -59,3 +59,9 @@ func TestListRARRejectsInvalidInputWithoutPanic(t *testing.T) {
 		t.Fatalf("invalid RAR result = %#v, %v", names, encrypted)
 	}
 }
+
+func TestOLEMacroProbeRejectsNonCompoundInput(t *testing.T) {
+	if oleHasVBA([]byte("not an OLE document")) {
+		t.Fatal("non-OLE input was marked as containing VBA")
+	}
+}
