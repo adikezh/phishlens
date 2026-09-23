@@ -156,6 +156,8 @@ that require external accounts, providers, or deployment-specific decisions.
   read-only rootfs, no-new-privileges, and `/health` verified locally.
 - [x] CI container runtime smoke: named-volume ownership, read-only rootfs,
   dropped capabilities, health endpoint, and add-in assets.
+- [x] CI container smoke exercises all three built-in API demos and enforces
+  a five-second end-to-end response gate.
 - [x] Community PDF static analysis: bounded URL/text extraction and active
   feature detection without rendering or executing PDF actions. Local Tesseract
   OCR is available as an optional OCR/Business extension; multilingual quality

@@ -37,6 +37,7 @@ test -s /tmp/phishlens-health.json
 grep -q '"status":"ok"' /tmp/phishlens-health.json
 curl --fail --silent "http://127.0.0.1:${PORT}/addins/outlook/manifest.xml" >/dev/null
 curl --fail --silent "http://127.0.0.1:${PORT}/addins/outlook/icon-128.png" >/dev/null
+python scripts/demo_smoke.py "http://127.0.0.1:${PORT}"
 
 test "$(docker inspect -f '{{.Config.User}}' "$NAME")" = "nonroot:nonroot"
 cat /tmp/phishlens-health.json
