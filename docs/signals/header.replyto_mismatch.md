@@ -15,7 +15,8 @@
 `Reply-To: support@kaspi-secure-login.com | From: security@kaspi.kz`
 
 ## Ложные срабатывания
-- Рассылочные платформы (`reply@mailer.example`) — снижается через `esp_domains` бренда (пока учитывается только в H-03; TODO применить и здесь).
+- Рассылочные платформы (`reply@mailer.example`) — не срабатывает, если домен
+  входит в `domains` или `esp_domains` распознанного бренда.
 - Тикет-системы (`support@helpdesk.vendor.com`) — добавить домен в allowlist организации.
 
 ## Тесты

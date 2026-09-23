@@ -14,6 +14,9 @@ func replyToMismatch(_ context.Context, in *signals.Input) ([]domain.Signal, err
 	if m.ReplyTo.Domain == "" || m.From.Domain == "" || netutil.SameRegistrable(m.ReplyTo.Domain, m.From.Domain) {
 		return nil, nil
 	}
+	if in.Brand != nil && in.Brands != nil && in.Brands.IsOfficial(in.Brand.Name, m.ReplyTo.Domain) {
+		return nil, nil // brand's ESP or official reply domain
+	}
 	return []domain.Signal{signals.New(IDReplyToMismatch, domain.CategoryHeader, 15, 0.9,
 		"Reply-To: "+m.ReplyTo.Addr+" | From: "+m.From.Addr, in.Lang, m.ReplyTo.Domain, m.From.Domain)}, nil
 }

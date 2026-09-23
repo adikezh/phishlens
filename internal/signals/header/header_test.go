@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/phishlens/phishlens/internal/brands"
 	"github.com/phishlens/phishlens/internal/domain"
 	"github.com/phishlens/phishlens/internal/parse"
 	"github.com/phishlens/phishlens/internal/signals"
@@ -41,6 +42,16 @@ func TestReplyToMismatch(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReplyToMismatchAllowsBrandESP(t *testing.T) {
+	m := &domain.ParsedMail{From: parse.ParseAddress("alerts@kaspi.kz"), ReplyTo: parse.ParseAddress("reply@mail.kaspi.kz")}
+	in := input(m)
+	in.Brand = &domain.BrandMatch{Name: "Kaspi", Official: true}
+	in.Brands = brands.NewMatcher([]brands.Brand{{Name: "Kaspi", Domains: []string{"kaspi.kz"}, ESPDomains: []string{"mail.kaspi.kz"}}}, nil)
+	sigs, err := replyToMismatch(context.Background(), in)
+	require.NoError(t, err)
+	require.Empty(t, sigs)
 }
 
 func TestDisplayNameEmail(t *testing.T) {
