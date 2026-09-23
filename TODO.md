@@ -114,7 +114,7 @@ that require external accounts, providers, or deployment-specific decisions.
 - Gmail add-in host validation and live IMAP/Graph/Outlook/M365
   provider/host validation, plus Telegram bot/token verification.
 - Configure and verify a real URLhaus Auth-Key; without it the provider is explicitly degraded to unknown.
-- Live Safe Browsing/AbuseIPDB/VirusTotal accounts and rate limits.
+- Safe Browsing, AbuseIPDB, and VirusTotal integrations are implemented with bounded HTTP clients and fail-closed-to-unknown behavior; live account/key/rate-limit verification remains external.
 - Live OIDC IdP/group/tenant verification, multi-tenant production isolation,
   live TheHive account verification,
   and IRIS/Jira account integration.

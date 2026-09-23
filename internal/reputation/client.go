@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -26,16 +27,30 @@ var ErrNotImplemented = errors.New("reputation: not implemented")
 
 // Client aggregates sources.
 type Client struct {
-	cfg      config.Reputation
-	resolver *net.Resolver
-	cache    *ttlCache
-	log      zerolog.Logger
-	local    map[string]struct{} // local domain blocklist (from data/ or org)
+	cfg             config.Reputation
+	resolver        *net.Resolver
+	cache           *ttlCache
+	log             zerolog.Logger
+	local           map[string]struct{} // local domain blocklist (from data/ or org)
+	http            *http.Client
+	safeBrowsingURL string
+	abuseIPDBURL    string
+	virusTotalURL   string
 }
 
 // New builds a client; dnsResolver is "host:port" or "" for the system resolver.
 func New(cfg config.Reputation, dnsResolver string, log zerolog.Logger) *Client {
-	c := &Client{cfg: cfg, cache: newTTLCache(), log: log, local: map[string]struct{}{}}
+	timeout := cfg.Timeout
+	if timeout <= 0 {
+		timeout = 3 * time.Second
+	}
+	c := &Client{
+		cfg: cfg, cache: newTTLCache(), log: log, local: map[string]struct{}{},
+		http:            &http.Client{Timeout: timeout},
+		safeBrowsingURL: "https://safebrowsing.googleapis.com/v4/threatMatches:find",
+		abuseIPDBURL:    "https://api.abuseipdb.com/api/v2/check",
+		virusTotalURL:   "https://www.virustotal.com/api/v3/files",
+	}
 	if dnsResolver != "" {
 		c.resolver = &net.Resolver{
 			PreferGo: true,
@@ -98,6 +113,16 @@ func (c *Client) IPListed(ctx context.Context, ip string) (bool, string, error) 
 			}
 		}
 	}
+	if c.cfg.AbuseIPDB.Enabled {
+		listed, err := abuseIPDBLookup(ctx, c.http, c.abuseIPDBURL, ip, os.Getenv(c.cfg.AbuseIPDB.KeyEnv))
+		if err == nil && listed {
+			c.cache.set(key, listResult{true, "abuseipdb"}, 6*time.Hour)
+			return true, "abuseipdb", nil
+		}
+		if err != nil {
+			lastErr = err
+		}
+	}
 	if lastErr != nil {
 		return false, "", fmt.Errorf("dnsbl: %w", lastErr)
 	}
@@ -133,8 +158,33 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 			providerError = true
 		}
 	}
+	if c.cfg.SafeBrowsing.Enabled {
+		listed, err := safeBrowsingLookup(ctx, c.http, c.safeBrowsingURL, domain, os.Getenv(c.cfg.SafeBrowsing.APIKeyEnv))
+		if err == nil && listed {
+			c.cache.set(key, listResult{true, "safebrowsing"}, 12*time.Hour)
+			return true, "safebrowsing", nil
+		}
+		if err != nil {
+			providerError = true
+		}
+	}
 	if !providerError {
 		c.cache.set(key, listResult{false, ""}, 6*time.Hour)
+	}
+	return false, "", nil
+}
+
+// FileHashListed checks VirusTotal by hash only. The file bytes are never sent.
+func (c *Client) FileHashListed(ctx context.Context, sha256 string) (bool, string, error) {
+	if !c.cfg.VirusTotal.Enabled || !c.cfg.VirusTotal.AttachmentsOnly || !isSHA256(sha256) {
+		return false, "", nil
+	}
+	listed, err := virusTotalLookup(ctx, c.http, c.virusTotalURL, sha256, os.Getenv(c.cfg.VirusTotal.KeyEnv))
+	if err != nil {
+		return false, "", err
+	}
+	if listed {
+		return true, "virustotal", nil
 	}
 	return false, "", nil
 }

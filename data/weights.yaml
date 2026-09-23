@@ -47,6 +47,7 @@ signals:
   attachment.archive_executable: 30
   attachment.macro: 30
   attachment.html_active: 25
+  attachment.virustotal: 35
   # --- контент (C-xx) ---
   content.urgency: 10
   content.threat: 10

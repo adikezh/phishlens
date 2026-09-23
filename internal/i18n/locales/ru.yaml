@@ -51,6 +51,7 @@ attachment.archive_encrypted: "Архив %s защищён паролем — �
 attachment.archive_executable: "Внутри архива %s исполняемый файл: %s."
 attachment.macro: "Документ %s содержит макросы (VBA)."
 attachment.html_active: "HTML-вложение %s содержит скрипт или форму (HTML-smuggling)."
+attachment.virustotal: "Вложение %s обнаружено источником %s."
 
 # --- контент ---
 content.urgency: "Давление срочностью: %s."

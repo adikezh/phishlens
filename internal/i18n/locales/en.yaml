@@ -44,6 +44,7 @@ attachment.archive_encrypted: "The archive %s is password-protected — a common
 attachment.archive_executable: "The archive %s contains an executable: %s."
 attachment.macro: "The document %s contains macros (VBA)."
 attachment.html_active: "The HTML attachment %s contains a script or form (HTML smuggling)."
+attachment.virustotal: "The attachment %s is reported by %s."
 
 content.urgency: "Pressure through urgency: %s."
 content.threat: "Threats and intimidation: %s."

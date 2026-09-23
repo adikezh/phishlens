@@ -1,6 +1,5 @@
 // Package attachment implements A-01 … A-06 on attachment metadata only —
 // contents are never executed (ТЗ §11).
-// TODO(A-05): VirusTotal / MalwareBazaar hash lookup (reputation stage).
 package attachment
 
 import (
@@ -17,6 +16,7 @@ const (
 	IDMacro             = "attachment.macro"              // A-03
 	IDHTMLActive        = "attachment.html_active"        // A-06
 	IDPDFActive         = "attachment.pdf_active"         // A-04
+	IDVirusTotal        = "attachment.virustotal"         // A-05
 )
 
 // Register adds attachment checks.
@@ -27,5 +27,6 @@ func Register(r *signals.Registry) {
 		signals.NewFunc(IDMacro, domain.CategoryAttachment, macro),
 		signals.NewFunc(IDHTMLActive, domain.CategoryAttachment, htmlActive),
 		signals.NewFunc(IDPDFActive, domain.CategoryAttachment, pdfActive),
+		signals.NewFunc(IDVirusTotal, domain.CategoryAttachment, virusTotal),
 	)
 }

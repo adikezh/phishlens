@@ -45,6 +45,7 @@ attachment.archive_encrypted: "%s мұрағаты құпия сөзбен қо�
 attachment.archive_executable: "%s мұрағатының ішінде орындалатын файл: %s."
 attachment.macro: "%s құжатында макростар (VBA) бар."
 attachment.html_active: "%s HTML-тіркемесінде скрипт немесе форма бар (HTML-smuggling)."
+attachment.virustotal: "%s тіркемесін %s көзі анықтады."
 
 content.urgency: "Шұғылдықпен қысым: %s."
 content.threat: "Қорқыту және үрей туғызу: %s."
