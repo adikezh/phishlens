@@ -111,15 +111,30 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 	if _, ok := c.local[domain]; ok {
 		return true, "local", nil
 	}
+	key := "domain-listed:" + domain
+	if v, ok := c.cache.get(key); ok {
+		r := v.(listResult)
+		return r.listed, r.source, nil
+	}
+	providerError := false
 	if c.cfg.URLhaus.Enabled {
 		if listed, err := urlhausLookup(ctx, domain, os.Getenv(c.cfg.URLhaus.AuthKeyEnv)); err == nil && listed {
+			c.cache.set(key, listResult{true, "urlhaus"}, 12*time.Hour)
 			return true, "urlhaus", nil
+		} else if err != nil {
+			providerError = true
 		}
 	}
 	if c.cfg.OpenPhish.Enabled {
 		if listed, err := openphishLookup(ctx, domain); err == nil && listed {
+			c.cache.set(key, listResult{true, "openphish"}, 12*time.Hour)
 			return true, "openphish", nil
+		} else if err != nil {
+			providerError = true
 		}
+	}
+	if !providerError {
+		c.cache.set(key, listResult{false, ""}, 6*time.Hour)
 	}
 	return false, "", nil
 }

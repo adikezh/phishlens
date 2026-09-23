@@ -27,7 +27,7 @@
 | `signals.Check` | `internal/signals` | ~40 функций в `signals/<category>/` |
 | `signals.BrandLookup` | `internal/signals` | `brands.Matcher` |
 | `signals.ListLookup` | `internal/signals` | `app.storeLists` (allow/block из БД) |
-| `signals.ReputationLookup` | `internal/signals` | `reputation.Client` (DNSBL реальный, TI/RDAP — TODO) |
+| `signals.ReputationLookup` | `internal/signals` | `reputation.Client` (DNSBL, OpenPhish, RDAP; URLhaus with Auth-Key) |
 | `llm.Provider` | `internal/llm` | `OpenAICompatible`, `Anthropic` (official SDK), `Ollama` |
 | `parse.OCR` | `internal/parse` | `TesseractOCR` (HTTP к контейнеру), vision-LLM — TODO |
 | `store.Store` | `internal/store` | `SQLite` (modernc), Postgres — TODO |
