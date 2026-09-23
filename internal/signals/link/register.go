@@ -1,5 +1,4 @@
 // Package link implements hyperlink heuristics L-01 … L-08 (ТЗ §4.2).
-// TODO(L-03): HEAD-based shortener expansion with SSRF guard (netutil.IsPrivateOrLocal).
 // TODO(L-05): fetch target and look for <input type=password> on a non-brand domain (Business: via sandbox).
 // TODO(L-03): shortener expansion. TODO(L-05): safe target form inspection.
 // TODO(L-08): QR decoding (gozxing).

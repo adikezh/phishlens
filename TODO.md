@@ -34,6 +34,8 @@ that require external accounts, providers, or deployment-specific decisions.
   inline-image metadata/HTML and marketing-language context.
 - L-08 QR codes in image submissions are decoded locally; only HTTP(S) QR
   payloads are added to the normal link-analysis path.
+- L-03 known shorteners are expanded with bounded HEAD redirects and private/
+  local-address rejection; expansion is disabled in offline mode.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.

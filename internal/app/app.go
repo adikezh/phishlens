@@ -91,6 +91,11 @@ func New(ctx context.Context, cfg *config.Config, log zerolog.Logger, opts Optio
 	a.Parser = parse.New()
 	a.Parser.Shorteners = a.Data.Shorteners
 	a.Parser.Limits.MaxAttachment = int64(cfg.Server.MaxUploadMB) << 20
+	if !opts.Offline && cfg.Reputation.LinkExpansion.Enabled {
+		a.Parser.ExpandShorteners = true
+		a.Parser.MaxRedirects = cfg.Reputation.LinkExpansion.MaxRedirects
+		a.Parser.ExpansionTimeout = cfg.Reputation.LinkExpansion.Timeout
+	}
 	if cfg.OCR.Mode == "tesseract" && cfg.OCR.TesseractURL != "" {
 		a.Parser.OCR = parse.NewTesseractOCR(cfg.OCR.TesseractURL)
 	}

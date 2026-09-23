@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/phishlens/phishlens/internal/domain"
 )
@@ -52,9 +53,12 @@ type OCR interface {
 
 // Parser holds shared options.
 type Parser struct {
-	Limits     Limits
-	Shorteners map[string]struct{} // for Link.IsShortener
-	OCR        OCR                 // nil → images return ErrOCRUnavailable
+	Limits           Limits
+	Shorteners       map[string]struct{} // for Link.IsShortener
+	OCR              OCR                 // nil → images return ErrOCRUnavailable
+	ExpandShorteners bool
+	MaxRedirects     int
+	ExpansionTimeout time.Duration
 }
 
 // New returns a Parser with default limits.
@@ -67,18 +71,24 @@ func (p *Parser) Parse(ctx context.Context, kind domain.Kind, data []byte) (*dom
 	if len(data) == 0 {
 		return nil, ErrEmpty
 	}
+	var pm *domain.ParsedMail
+	var err error
 	switch kind {
 	case domain.KindEML:
-		return p.EML(data)
+		pm, err = p.EML(data)
 	case domain.KindText:
-		return p.Text(string(data))
+		pm, err = p.Text(string(data))
 	case domain.KindMSG:
-		return p.MSG(data)
+		pm, err = p.MSG(data)
 	case domain.KindImage:
-		return p.Image(ctx, data)
+		pm, err = p.Image(ctx, data)
 	case domain.KindPDF:
-		return p.PDF(data)
+		pm, err = p.PDF(data)
 	default:
 		return nil, fmt.Errorf("parse: unknown kind %q", kind)
 	}
+	if pm != nil {
+		p.expandShorteners(ctx, pm)
+	}
+	return pm, err
 }

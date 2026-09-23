@@ -50,6 +50,7 @@ func (p *Parser) Image(ctx context.Context, data []byte) (*domain.ParsedMail, er
 		}
 	}
 	if p.OCR == nil {
+		p.finish(pm)
 		return pm, ErrOCRUnavailable
 	}
 	text, urls, err := p.OCR.Extract(ctx, data, mime)

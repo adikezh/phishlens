@@ -32,7 +32,7 @@
 | domain.risky_tld | D-06 | 10×risk | ✅ |
 | link.text_href_mismatch | L-01 | 20 | ✅ |
 | link.ip_host / nonstandard_port | L-02 | 20/8 | ✅ |
-| link.shortener | L-03 | 10 | ✅ сокращатель распознан; разворачивание — TODO |
+| link.shortener | L-03 | 10 | ✅ HEAD-разворачивание с лимитом редиректов и SSRF guard |
 | link.tracking_pixel / missing_unsubscribe | L-07 | 8/8 | ✅ статический HTML/inline-image анализ |
 | QR URL from image | L-08 | — | ✅ gozxing decode; URL проходит обычный link-анализ |
 | link.obfuscated | L-04 | 15 | ✅ |
