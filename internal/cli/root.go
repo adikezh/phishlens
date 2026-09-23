@@ -50,6 +50,8 @@ func newRoot() *cobra.Command {
 		newKeygenCmd(),
 		newVersionCmd(),
 		newHealthCmd(),
+		newBackupCmd(),
+		newRestoreCmd(),
 	)
 	return root
 }

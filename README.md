@@ -86,6 +86,8 @@ weights to -100..100. Review the output before using it as a pilot override.
 - `report --format awareness` — HTML-карточки для обучения сотрудников из
   подтверждённых кейсов без адресов, тем и текста писем.
 - `migrate up`, `apikey create`, `lists allow|block add|list`.
+- `backup --out backup.db` / `restore --in backup.db --force` — validated,
+  atomic SQLite backup/restore; stop the service before restore.
 
 ## Что не входит в подтверждённый Community v1
 

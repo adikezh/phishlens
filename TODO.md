@@ -107,6 +107,9 @@ that require external accounts, providers, or deployment-specific decisions.
   confirmed phishing cases using only verdict, score, brand, signal IDs, and
   generic lessons; message subjects, bodies, addresses, and submission IDs are
   excluded.
+- `phishlens backup --out ...` creates a validated SQLite snapshot via
+  `VACUUM INTO`; `phishlens restore --in ... --force` validates integrity before
+  atomic replacement. PostgreSQL backup remains a DBA/platform responsibility.
 
 ## Community v1 gates still to close
 
@@ -141,7 +144,7 @@ that require external accounts, providers, or deployment-specific decisions.
 - Sandbox client, SSRF checks, L-05 login-form signal, and Chrome image entrypoint are implemented; isolated deployment, egress proxy policy, and live browser smoke evidence remain external.
 - Pilot evidence: one organization, two weeks, at least 20 real submissions,
   measured false positives/negatives, and owner-approved weight changes.
-- Public demo, registry publication, and operational backup/restore.
+- Public demo and registry publication.
 - Periodic reports now persist department and review timestamps and include
   department breakdowns plus average review time; reaction-time interpretation
   still needs validation against a real pilot workflow.
