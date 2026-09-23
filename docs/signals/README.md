@@ -22,7 +22,7 @@
 | header.displayname_email | H-01 | 20 | ✅ + тесты |
 | header.replyto_mismatch | H-02 | 15 | ✅ + тесты |
 | header.returnpath_mismatch | H-03 | 10 | ✅ + тесты |
-| auth.spf_fail / spf_softfail / dkim_fail / dkim_none / dmarc_fail / unverified | H-04 | 20/10/15/5/25/3 | ✅ (по заголовку; собственная проверка — TODO) |
+| auth.spf_fail / spf_softfail / dkim_fail / dkim_none / dmarc_fail / unverified | H-04 | 20/10/15/5/25/3 | ✅ по Authentication-Results; собственная DNS-проверка — TODO |
 | auth.aligned_official | F-4.5.3 | −40 | ✅ |
 | header.messageid_mismatch / messageid_missing | H-06 | 8/5 | ✅ + тесты |
 | header.date_skew | H-08 | 8 | ✅ + тесты |
@@ -39,7 +39,7 @@
 | link.obfuscated | L-04 | 15 | ✅ |
 | link.punycode / brand_lookalike / many_domains | D-03/D-04/L-06 | 20/30/8 | ✅ |
 | attachment.dangerous_ext / double_ext / rtl_override | A-01 | 30/25/30 | ✅ |
-| attachment.archive_encrypted / archive_executable | A-02 | 25/30 | ✅ zip; rar/7z — TODO |
+| attachment.archive_encrypted / archive_executable | A-02 | 25/30 | ✅ zip; rar/7z listing — TODO |
 | attachment.macro | A-03 | 30 | ✅ OOXML; OLE — TODO |
 | attachment.html_active | A-06 | 25 | ✅ |
 | content.urgency / threat | C-01 | 10/10 | ✅ ru/en/kz |

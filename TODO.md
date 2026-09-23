@@ -56,7 +56,8 @@ that require external accounts, providers, or deployment-specific decisions.
 - [ ] Add a larger, licensed/synthetic regression corpus before making any
   accuracy claim beyond the three demo messages.
 - [ ] Add API/UI end-to-end tests against a started server, including upload
-  limits, API-key roles, persistence, and deletion.
+  limits, browser-visible API-key roles, persistence, and deletion. Current
+  HTTP coverage uses httptest and the UI smoke uses a local started server.
 - [x] Add deterministic local weight tuning from analyst labels; pilot owners
   still must review and approve any tuned weights before deployment.
 - [x] Add fuzz tests for text/EML dispatch, HTML/URL extraction, and attachment listing paths.

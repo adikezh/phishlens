@@ -1,7 +1,6 @@
 // Package content implements body heuristics C-01 … C-08 (ТЗ §4.2) over the
 // ru/en/kz dictionaries in data/keywords.
 // TODO(C-04): language mismatch vs brand locale / machine translation (heuristics + LLM).
-// TODO(C-06): IIN/BIN checksum validation.
 package content
 
 import (

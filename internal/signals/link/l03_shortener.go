@@ -7,7 +7,8 @@ import (
 	"github.com/phishlens/phishlens/internal/signals"
 )
 
-// L-03: URL shortener hides the destination (expansion TODO).
+// L-03: URL shortener hides the destination; bounded expansion is performed by
+// parse.Parser before the link checks run.
 func shortener(_ context.Context, in *signals.Input) ([]domain.Signal, error) {
 	var out []domain.Signal
 	seen := map[string]bool{}
