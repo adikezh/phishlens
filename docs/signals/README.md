@@ -34,6 +34,7 @@
 | link.ip_host / nonstandard_port | L-02 | 20/8 | ✅ |
 | link.shortener | L-03 | 10 | ✅ сокращатель распознан; разворачивание — TODO |
 | link.tracking_pixel / missing_unsubscribe | L-07 | 8/8 | ✅ статический HTML/inline-image анализ |
+| QR URL from image | L-08 | — | ✅ gozxing decode; URL проходит обычный link-анализ |
 | link.obfuscated | L-04 | 15 | ✅ |
 | link.punycode / brand_lookalike / many_domains | D-03/D-04/L-06 | 20/30/8 | ✅ |
 | attachment.dangerous_ext / double_ext / rtl_override | A-01 | 30/25/30 | ✅ |

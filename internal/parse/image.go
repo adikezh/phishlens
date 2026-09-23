@@ -10,6 +10,11 @@ import (
 	_ "image/gif"  // register decoders for DecodeConfig
 	_ "image/jpeg" // register decoders for DecodeConfig
 	_ "image/png"  // register decoders for DecodeConfig
+	"net/url"
+	"strings"
+
+	"github.com/makiuchi-d/gozxing"
+	"github.com/makiuchi-d/gozxing/qrcode"
 
 	"github.com/phishlens/phishlens/internal/domain"
 )
@@ -18,8 +23,7 @@ import (
 // hashes it, then runs OCR when a backend is configured. Without OCR it returns
 // the partially filled mail and ErrOCRUnavailable so the caller can degrade.
 //
-// TODO(§11): strip EXIF before any external call; pHash (goimagehash) for logo matching;
-// QR decoding (gozxing, L-08).
+// TODO(§11): strip EXIF before any external call; pHash (goimagehash) for logo matching.
 func (p *Parser) Image(ctx context.Context, data []byte) (*domain.ParsedMail, error) {
 	if len(data) == 0 {
 		return nil, ErrEmpty
@@ -40,6 +44,11 @@ func (p *Parser) Image(ctx context.Context, data []byte) (*domain.ParsedMail, er
 			Width: cfg.Width, Height: cfg.Height,
 		}},
 	}
+	if img, _, err := image.Decode(bytes.NewReader(data)); err == nil {
+		if qrURL := decodeQR(img); qrURL != "" {
+			pm.Links = append(pm.Links, domain.Link{Href: qrURL, Text: "QR"})
+		}
+	}
 	if p.OCR == nil {
 		return pm, ErrOCRUnavailable
 	}
@@ -54,6 +63,23 @@ func (p *Parser) Image(ctx context.Context, data []byte) (*domain.ParsedMail, er
 	}
 	p.finish(pm)
 	return pm, nil
+}
+
+func decodeQR(img image.Image) string {
+	bitmap, err := gozxing.NewBinaryBitmapFromImage(img)
+	if err != nil {
+		return ""
+	}
+	result, err := qrcode.NewQRCodeReader().Decode(bitmap, nil)
+	if err != nil {
+		return ""
+	}
+	text := strings.TrimSpace(result.GetText())
+	u, err := url.Parse(text)
+	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
+		return ""
+	}
+	return text
 }
 
 func imageFrom(content []byte, mime string, maxPixels int) domain.InlineImage {

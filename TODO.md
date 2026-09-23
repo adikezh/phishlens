@@ -32,6 +32,8 @@ that require external accounts, providers, or deployment-specific decisions.
   JSONL labels and writes a reproducible YAML override file.
 - L-07 tracking pixels and missing unsubscribe instructions are detected from
   inline-image metadata/HTML and marketing-language context.
+- L-08 QR codes in image submissions are decoded locally; only HTTP(S) QR
+  payloads are added to the normal link-analysis path.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
