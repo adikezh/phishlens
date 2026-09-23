@@ -30,3 +30,4 @@ internal/store/sqlcgen/
 internal/web/**/*_templ.go
 graphify-out/
 node_modules/
+__pycache__/
