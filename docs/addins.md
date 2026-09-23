@@ -2,7 +2,8 @@
 
 ## Outlook (F-4.1.6)
 1. Разверните сервис с публичным HTTPS `server.base_url`.
-2. В addins/outlook/manifest.xml замените BASE_URL; иконки положите в addins/outlook/icon-{64,128}.png.
+2. В addins/outlook/manifest.xml замените BASE_URL на публичный HTTPS-адрес
+   сервиса. Иконки уже входят в репозиторий: `icon-64.png` и `icon-128.png`.
 3. M365 admin center → Integrated apps → Upload custom app → manifest (или sideload для теста).
 4. Панель берёт письмо через getAsFileAsync (Mailbox 1.14+) и шлёт `POST /v1/analyze {eml_base64, channel: outlook}`.
    После анализа кнопка «Сообщить в ИБ» вызывает `POST /v1/submissions/{id}/report`;
@@ -31,3 +32,7 @@ explicit `smtp_host`, `smtp_from` and optional authentication settings.
 endpoint, downloads each new message as MIME with a 25 MiB bound, analyzes it,
 marks it read and persists the delta cursor in `state_file` (mode 0600 on
 Unix). Configure Azure application permissions before enabling it.
+Для Gmail Apps Script задайте Script Properties `PHISHLENS_URL` и
+`PHISHLENS_KEY`, затем разверните `addins/gmail/Code.gs` как Gmail add-on.
+Логотип манифеста берётся из публичного GitHub raw URL и может быть заменён
+на URL корпоративного HTTPS-хоста при публикации.

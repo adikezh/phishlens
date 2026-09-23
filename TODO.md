@@ -131,6 +131,9 @@ that require external accounts, providers, or deployment-specific decisions.
 - LLM `calls_per_hour` and `usd_per_day` budgets are enforced in-process;
   provider-specific USD-per-1K input/output prices are configured explicitly,
   while zero-priced local providers are counted only against the call cap.
+- Outlook add-in now ships the referenced 64x64 and 128x128 PNG assets; Gmail
+  Apps Script manifest has a real HTTPS logo URL, and CI validates both static
+  manifests plus required assets.
 
 ## Community v1 gates still to close
 

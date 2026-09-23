@@ -11,7 +11,7 @@
   "addOns": {
     "common": {
       "name": "PhishLens",
-      "logoUrl": "https://example.invalid/addins/outlook/icon-128.png",
+      "logoUrl": "https://raw.githubusercontent.com/adikezh/phishlens/main/addins/outlook/icon-128.png",
       "useLocaleFromApp": true
     },
     "gmail": {

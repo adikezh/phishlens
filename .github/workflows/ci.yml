@@ -31,6 +31,8 @@ jobs:
       - run: go build ./...
       - run: go vet ./...
       - run: go test ./... -race -count=1
+      - name: validate add-in artifacts
+        run: python scripts/validate_addins.py
       - name: eval corpus (F1 gate)
         run: go run ./cmd/phishlens eval --dir testdata/eml --expected testdata/expected --no-llm --min-f1 0.9
       - name: helm lint

@@ -15,7 +15,7 @@ customer pilot.
 | LLM explanation and vision OCR | OpenAI-compatible, Anthropic, Ollama adapters; redaction, schema validation, cache, hourly call and priced daily USD budgets; vision is advisory | LLM unit tests and offline path | Implemented; live provider/model and current price-sheet configuration remain external |
 | Score and hard rules | Weighted signals, thresholds, allow/block lists, technical rules cannot be overridden by LLM clean | score and analyzer tests | Implemented locally |
 | Queue, campaigns, review actions, reports, IOC/STIX/MISP, awareness | API/UI/store/report/notification paths are present | HTTP/API, report, review, and integration tests | Implemented locally |
-| IMAP, Graph, Outlook/Gmail add-ins | Bounded receivers and static add-in bundles | package tests and static inspection | Code implemented; live host validation remains external |
+| IMAP, Graph, Outlook/Gmail add-ins | Bounded receivers and static add-in bundles with checked XML/JSON and PNG assets | `scripts/validate_addins.py`, package tests, hosted CI | Static artifacts validated; live host validation remains external |
 | Wazuh/webhook/TheHive/IRIS/Jira | Privacy-safe outbound adapters with bounded requests | notifier tests | Code implemented; real account/permission tests remain external |
 | OCR container | Tesseract HTTP adapter with ru/en/kz data, limits, timeout and isolation | local Docker build/health smoke and hosted OCR build | Implemented and build-verified |
 | Sandbox | Remote Chrome client with SSRF checks and isolated image | sandbox unit tests and Dockerfile | Code implemented; egress proxy and browser smoke remain external |
