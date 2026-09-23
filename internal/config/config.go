@@ -317,6 +317,9 @@ func (c *Config) Validate() error {
 			return errors.New("config: auth.oidc requires issuer, client_id, client_secret_env, redirect_url, and session_secret_env when enabled")
 		}
 	}
+	if c.OCR.Mode == "vision_llm" && !c.LLM.Enabled {
+		return errors.New("config: ocr.mode=vision_llm requires llm.enabled=true")
+	}
 	return nil
 }
 

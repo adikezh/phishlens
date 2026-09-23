@@ -77,6 +77,10 @@ that require external accounts, providers, or deployment-specific decisions.
   polling, bounded MIME `$value` downloads, shared analysis, `isRead` updates,
   and a private persisted delta cursor. Live Azure app permissions and tenant
   validation remain external gates.
+- `ocr.mode=vision_llm` now routes images to Ollama or OpenAI-compatible vision
+  providers for untrusted transcription, then runs normal URL extraction and
+  deterministic scoring. A live model/container and multilingual OCR quality
+  corpus remain external evidence gates.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.

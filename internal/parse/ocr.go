@@ -17,6 +17,27 @@ type TesseractOCR struct {
 	Client *http.Client
 }
 
+// VisionOCR adapts a vision model to the OCR interface. Its output is
+// untrusted text and is subsequently processed by the normal parser.
+type VisionOCR struct {
+	ExtractVision func(context.Context, []byte, string) (string, error)
+}
+
+func NewVisionOCR(fn func(context.Context, []byte, string) (string, error)) *VisionOCR {
+	return &VisionOCR{ExtractVision: fn}
+}
+
+func (v *VisionOCR) Extract(ctx context.Context, image []byte, mime string) (string, []string, error) {
+	if v == nil || v.ExtractVision == nil {
+		return "", nil, ErrOCRUnavailable
+	}
+	text, err := v.ExtractVision(ctx, image, mime)
+	if err != nil {
+		return "", nil, err
+	}
+	return text, ExtractURLs(text), nil
+}
+
 // NewTesseractOCR returns a client with a sane timeout.
 func NewTesseractOCR(url string) *TesseractOCR {
 	return &TesseractOCR{URL: url, Client: &http.Client{Timeout: 20 * time.Second}}

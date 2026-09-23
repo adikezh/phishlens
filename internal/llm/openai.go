@@ -3,6 +3,7 @@ package llm
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -98,4 +99,44 @@ func (o *OpenAICompatible) Complete(ctx context.Context, req Request) (*Response
 		InputTokens:  out.Usage.PromptTokens,
 		OutputTokens: out.Usage.CompletionTokens,
 	}, nil
+}
+
+// Vision sends an image to the OpenAI-compatible vision chat endpoint.
+func (o *OpenAICompatible) Vision(ctx context.Context, image []byte, mime, prompt string) (*Response, error) {
+	content := []map[string]any{{"type": "text", "text": prompt}, {"type": "image_url", "image_url": map[string]string{"url": "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(image)}}}
+	body := map[string]any{"model": o.model, "temperature": 0, "max_tokens": 1200, "messages": []map[string]any{{"role": "user", "content": content}}}
+	b, _ := json.Marshal(body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, o.baseURL+"/chat/completions", bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if o.apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+o.apiKey)
+	}
+	resp, err := o.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("llm/%s vision: %w", o.name, err)
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("llm/%s vision: status %d: %s", o.name, resp.StatusCode, truncateRunes(string(raw), 300))
+	}
+	var out struct {
+		Model   string `json:"model"`
+		Choices []struct {
+			Message oaMessage `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, fmt.Errorf("llm/%s vision: decode: %w", o.name, err)
+	}
+	if len(out.Choices) == 0 {
+		return nil, fmt.Errorf("llm/%s vision: empty choices", o.name)
+	}
+	return &Response{Text: out.Choices[0].Message.Content, Model: out.Model}, nil
 }

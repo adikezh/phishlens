@@ -41,6 +41,14 @@ type Provider interface {
 	Complete(ctx context.Context, req Request) (*Response, error)
 }
 
+// VisionProvider is an optional provider capability for image transcription.
+// Vision output is treated as untrusted text by the parser and never becomes a
+// verdict on its own.
+type VisionProvider interface {
+	Provider
+	Vision(context.Context, []byte, string, string) (*Response, error)
+}
+
 // Output is the JSON schema the model must follow (F-4.4.2).
 type Output struct {
 	VerdictOpinion string   `json:"verdict_opinion"`

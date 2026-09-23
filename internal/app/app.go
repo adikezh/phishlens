@@ -99,7 +99,6 @@ func New(ctx context.Context, cfg *config.Config, log zerolog.Logger, opts Optio
 	if cfg.OCR.Mode == "tesseract" && cfg.OCR.TesseractURL != "" {
 		a.Parser.OCR = parse.NewTesseractOCR(cfg.OCR.TesseractURL)
 	}
-	// TODO(F-4.1.9): ocr.mode = vision_llm → llm vision provider as parse.OCR.
 
 	if !opts.Offline {
 		a.Rep = reputation.New(cfg.Reputation, cfg.AuthChecks.DNSResolver, log)
@@ -109,6 +108,11 @@ func New(ctx context.Context, cfg *config.Config, log zerolog.Logger, opts Optio
 		if a.LLM, err = llm.NewService(cfg.LLM, prompts.FS, cfg.Analysis.PromptsDir, log); err != nil {
 			return nil, fmt.Errorf("app: llm: %w", err)
 		}
+	}
+	if cfg.OCR.Mode == "vision_llm" && a.LLM != nil {
+		a.Parser.OCR = parse.NewVisionOCR(func(ctx context.Context, image []byte, mime string) (string, error) {
+			return a.LLM.Vision(ctx, image, mime)
+		})
 	}
 
 	if !opts.NoStore {

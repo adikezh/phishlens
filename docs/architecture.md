@@ -29,7 +29,7 @@
 | `signals.ListLookup` | `internal/signals` | `app.storeLists` (allow/block из БД) |
 | `signals.ReputationLookup` | `internal/signals` | `reputation.Client` (DNSBL, OpenPhish, RDAP; URLhaus with Auth-Key) |
 | `llm.Provider` | `internal/llm` | `OpenAICompatible`, `Anthropic` (official SDK), `Ollama` |
-| `parse.OCR` | `internal/parse` | `TesseractOCR` (HTTP к контейнеру), vision-LLM — TODO |
+| `parse.OCR` | `internal/parse` | `TesseractOCR` or vision-LLM through Ollama/OpenAI-compatible provider |
 | `store.Store` | `internal/store` | `SQLite` (modernc) and PostgreSQL (pgx), shared contract/migrations |
 | `notify.Notifier` | `internal/notify` | HMAC webhook (static and encrypted org subscriptions), privacy-safe Wazuh HTTP delivery, and TheHive 5 alert API |
 | `ingest.Runner` | `internal/ingest` | IMAPS, Microsoft Graph delta, and Telegram Bot API implemented |
@@ -42,6 +42,10 @@ deployment-specific claim mapping remain external evidence gates.
 The Telegram receiver uses `getUpdates`, `getFile`, and `sendMessage` with
 bounded HTTP calls; `/start <org-code>` creates an in-memory organization
 binding and message/photo content is passed to `app.Analyzer`.
+
+When `ocr.mode=vision_llm`, `parse.VisionOCR` calls the configured
+vision-capable LLM provider for transcription only; URLs and verdict signals
+are still produced by the deterministic parser/scoring pipeline.
 
 Long-running REST analyses reserve their submission ID first; the handler waits
 up to ten seconds, then returns `202` with a polling `Location` while the

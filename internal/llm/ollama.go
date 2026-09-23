@@ -3,6 +3,7 @@ package llm
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -79,4 +80,41 @@ func (o *Ollama) Complete(ctx context.Context, req Request) (*Response, error) {
 	return &Response{Text: out.Message.Content, Model: out.Model, InputTokens: out.PromptEvalCount, OutputTokens: out.EvalCount}, nil
 }
 
-// TODO(F-4.1.9): Vision(ctx, image, prompt) using visionModel and "images": [base64].
+// Vision sends an image to an Ollama vision model and requests plain-text
+// transcription. The parser applies all extraction and classification rules.
+func (o *Ollama) Vision(ctx context.Context, image []byte, mime, prompt string) (*Response, error) {
+	model := o.visionModel
+	if model == "" {
+		model = o.model
+	}
+	body := map[string]any{
+		"model": model, "stream": false,
+		"messages": []map[string]any{{"role": "user", "content": prompt, "images": []string{base64.StdEncoding.EncodeToString(image)}}},
+	}
+	b, _ := json.Marshal(body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, o.baseURL+"/api/chat", bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := o.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("llm/%s vision: %w", o.name, err)
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("llm/%s vision: status %d: %s", o.name, resp.StatusCode, truncateRunes(string(raw), 300))
+	}
+	var out struct {
+		Model   string    `json:"model"`
+		Message oaMessage `json:"message"`
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, fmt.Errorf("llm/%s vision: decode: %w", o.name, err)
+	}
+	return &Response{Text: out.Message.Content, Model: out.Model}, nil
+}
