@@ -30,7 +30,7 @@ that require external accounts, providers, or deployment-specific decisions.
   accuracy claim beyond the three demo messages.
 - [ ] Add API/UI end-to-end tests against a started server, including upload
   limits, API-key roles, persistence, and deletion.
-- [ ] Add fuzz tests for EML, HTML, URL, and attachment listing paths.
+- [x] Add fuzz tests for text/EML dispatch, HTML/URL extraction, and attachment listing paths.
 - [x] Docker Compose runtime smoke: init volume ownership, non-root image,
   read-only rootfs, no-new-privileges, and `/health` verified locally.
 - [ ] Decide whether PDF OCR belongs in Community or is a licensed Business
