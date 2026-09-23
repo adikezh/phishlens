@@ -23,6 +23,11 @@ func TestOfflineTextPerformance(t *testing.T) {
 
 	const workers = 50
 	input := []byte("From: security@example.test\nSubject: срочно подтвердите доступ\n\nОткройте https://login.example.test и подтвердите код.")
+	// Warm parser/registry one time before measuring concurrent steady-state
+	// work. This keeps package initialization and first-use allocations out of
+	// the 50-request latency sample while preserving the same input path.
+	_, err := a.Analyzer.Analyze(context.Background(), Request{Kind: domain.KindText, Data: input, NoStore: true})
+	require.NoError(t, err)
 	durations := make([]time.Duration, workers)
 	errs := make(chan error, workers)
 	start := make(chan struct{})
