@@ -4,6 +4,7 @@
 /* global Office */
 const BASE_URL = window.location.origin;
 const API_KEY = ""; // TODO: per-tenant key from manifest settings / SSO token (F-4.7.4)
+let lastSubmissionID = "";
 
 function setStatus(t) { document.getElementById("status").textContent = t; }
 
@@ -32,7 +33,8 @@ async function analyze(payload) {
   });
   if (!res.ok) { setStatus("Ошибка: " + res.status); return; }
   const data = await res.json();
-  setStatus(`Готово за ${data.result.duration_ms} мс`);
+  lastSubmissionID = data.id || "";
+  setStatus(`Готово за ${(data.result || {}).duration_ms || 0} мс`);
   render(data);
   document.getElementById("report").disabled = false;
 }
@@ -57,5 +59,13 @@ Office.onReady(() => {
       fallback(item);
     }
   };
-  document.getElementById("report").onclick = () => setStatus("TODO(F-4.6): отправить в очередь ИБ");
+  document.getElementById("report").onclick = async () => {
+    if (!lastSubmissionID) return;
+    const headers = {};
+    if (API_KEY) headers["X-API-Key"] = API_KEY;
+    const res = await fetch(`${BASE_URL}/v1/submissions/${encodeURIComponent(lastSubmissionID)}/report`, {
+      method: "POST", headers,
+    });
+    setStatus(res.ok ? "Отправлено в очередь ИБ" : "Не удалось отправить в очередь: " + res.status);
+  };
 });

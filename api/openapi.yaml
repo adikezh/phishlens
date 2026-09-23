@@ -27,7 +27,7 @@ paths:
         "200": { description: text/plain }
   /v1/analyze:
     post:
-      summary: Проанализировать письмо (текст / eml / изображение)
+      summary: Проанализировать письмо (текст / eml / msg / изображение / PDF)
       description: Синхронно ≤ 10 с. TODO(F-4.1.2) — 202 + Location при превышении бюджета.
       requestBody:
         required: true
@@ -118,6 +118,13 @@ paths:
       responses:
         "201": { description: домен заблокирован }
         "400": { $ref: "#/components/responses/Error" }
+  /v1/submissions/{id}/report:
+    post:
+      summary: Сообщить аналитикам о письме (user/analyst/admin)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "202": { description: обращение отправлено в очередь }
+        "404": { $ref: "#/components/responses/Error" }
   /v1/submissions/{id}/incident:
     post:
       summary: Эскалировать обращение в инцидент

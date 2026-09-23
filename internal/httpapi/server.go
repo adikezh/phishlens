@@ -40,6 +40,7 @@ func (s *Server) Routes(r chi.Router) {
 
 		v1.With(s.allowAnonymous).Post("/analyze", s.handleAnalyze)
 		v1.With(s.allowAnonymous).Get("/analyses/{id}", s.handleGetAnalysis)
+		v1.With(requireRole(RoleUser, RoleAnalyst, RoleAdmin)).Post("/submissions/{id}/report", s.handleReportSubmission)
 		v1.Get("/demos", s.handleDemos)
 
 		v1.With(requireRole(RoleAnalyst, RoleAdmin)).Get("/submissions", s.handleListSubmissions)

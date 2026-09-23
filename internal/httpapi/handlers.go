@@ -56,13 +56,14 @@ type MessageSummary struct {
 	Links       []domain.Link       `json:"links,omitempty"`
 	Attachments []domain.Attachment `json:"attachments,omitempty"`
 	AuthResults domain.AuthResults  `json:"auth_results"`
+	PDF         *domain.PDFInfo     `json:"pdf,omitempty"`
 }
 
 func toResponse(sub *domain.Submission) AnalyzeResponse {
 	resp := AnalyzeResponse{ID: sub.ID, Status: sub.Status, Channel: sub.Channel, Kind: sub.Kind, ReceivedAt: sub.ReceivedAt, Result: sub.Result}
 	if m := sub.Message; m != nil {
 		ms := &MessageSummary{From: m.From.String(), ReplyTo: m.ReplyTo.String(), Subject: m.Subject, Language: m.Language,
-			Links: m.Links, Attachments: m.Attachments, AuthResults: m.AuthResults}
+			Links: m.Links, Attachments: m.Attachments, AuthResults: m.AuthResults, PDF: m.PDF}
 		if !m.Date.IsZero() {
 			ms.Date = m.Date.Format(time.RFC3339)
 		}
@@ -83,7 +84,7 @@ func DetectKind(filename, contentType string, data []byte) (domain.Kind, error) 
 	case ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif" || strings.HasPrefix(ct, "image/"):
 		return domain.KindImage, nil
 	case ext == ".pdf" || strings.Contains(ct, "application/pdf"):
-		return "", errors.New("pdf screenshots are not supported yet (TODO F-4.1.1)")
+		return domain.KindPDF, nil
 	case ext == ".txt" || strings.HasPrefix(ct, "text/"):
 		return domain.KindText, nil
 	}
@@ -271,6 +272,25 @@ func (s *Server) handleReview(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "submission.review", Target: id, Details: body.Status})
 	writeJSON(w, http.StatusOK, map[string]string{"id": id, "status": body.Status})
+}
+
+// handleReportSubmission lets a regular employee move their own analyzed item
+// into the analyst queue without granting them review or list-management power.
+func (s *Server) handleReportSubmission(w http.ResponseWriter, r *http.Request) {
+	sub, p, ok := s.submissionForActor(w, r)
+	if !ok {
+		return
+	}
+	if sub.Status == domain.StatusConfirmedPhish || sub.Status == domain.StatusConfirmedClean {
+		writeError(w, http.StatusConflict, "already_reviewed", "submission already has an analyst decision")
+		return
+	}
+	if err := s.app.Store.UpdateSubmissionStatus(r.Context(), sub.ID, domain.StatusInReview, p.Name); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "submission.report", Target: sub.ID})
+	writeJSON(w, http.StatusAccepted, map[string]string{"id": sub.ID, "status": string(domain.StatusInReview)})
 }
 
 func (s *Server) submissionForActor(w http.ResponseWriter, r *http.Request) (*domain.Submission, Principal, bool) {
