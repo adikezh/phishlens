@@ -13,8 +13,8 @@ cleanup() {
 trap cleanup EXIT
 
 docker volume create "$VOLUME" >/dev/null
-docker run --rm -v "$VOLUME:/app/var" alpine:3.22 \
-  sh -c 'mkdir -p /app/var && chown -R 65532:65532 /app/var'
+docker run --rm --user 0:0 -v "$VOLUME:/app/var" alpine:3.22 \
+  sh -ec 'mkdir -p /app/var; chown -R 65532:65532 /app/var; stat -c "%u:%g" /app/var'
 
 docker run -d --name "$NAME" \
   --read-only \
@@ -38,6 +38,6 @@ grep -q '"status":"ok"' /tmp/phishlens-health.json
 curl --fail --silent "http://127.0.0.1:${PORT}/addins/outlook/manifest.xml" >/dev/null
 curl --fail --silent "http://127.0.0.1:${PORT}/addins/outlook/icon-128.png" >/dev/null
 
-test "$(docker inspect -f '{{.Config.User}}' "$NAME")" = "65532:65532"
+test "$(docker inspect -f '{{.Config.User}}' "$NAME")" = "nonroot:nonroot"
 cat /tmp/phishlens-health.json
 echo "container smoke passed: ${IMAGE}"
