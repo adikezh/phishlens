@@ -58,6 +58,9 @@ that require external accounts, providers, or deployment-specific decisions.
   ID-token audience and nonce, and issue signed HttpOnly sessions with default-
   deny role mapping. A live IdP, group/tenant claim mapping, rotation and
   multi-instance session test remain deployment gates.
+- REST analysis now reserves an ID, returns the completed result within the
+  10-second synchronous budget, or returns `202 Accepted` with `Location` and
+  `Retry-After` while the same persisted resource is processed.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.

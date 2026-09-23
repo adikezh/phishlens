@@ -28,7 +28,7 @@ paths:
   /v1/analyze:
     post:
       summary: Проанализировать письмо (текст / eml / msg / изображение / PDF)
-      description: Синхронно ≤ 10 с. TODO(F-4.1.2) — 202 + Location при превышении бюджета.
+      description: Синхронно ≤ 10 с; при превышении бюджета возвращается 202 с Location и результат доступен через GET /v1/analyses/{id}.
       requestBody:
         required: true
         content:
@@ -46,6 +46,14 @@ paths:
       responses:
         "200":
           description: Результат анализа
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnalyzeResponse" }
+        "202":
+          description: Анализ продолжается; заголовок Location указывает URL polling-ресурса
+          headers:
+            Location: { schema: { type: string } }
+            Retry-After: { schema: { type: integer } }
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AnalyzeResponse" }

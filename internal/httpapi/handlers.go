@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -176,22 +177,62 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "bad_request", "provide text, eml_base64, image_base64 or a multipart file")
 		return
 	}
-	sub, err := s.app.Analyzer.Analyze(r.Context(), req)
-	if err != nil {
-		switch {
-		case errors.Is(err, parse.ErrNotImplemented):
-			writeError(w, http.StatusNotImplemented, "not_implemented", err.Error())
-		case errors.Is(err, parse.ErrTooLarge):
-			writeError(w, http.StatusRequestEntityTooLarge, "too_large", err.Error())
-		case errors.Is(err, parse.ErrEmpty):
-			writeError(w, http.StatusBadRequest, "bad_request", err.Error())
-		default:
-			writeError(w, http.StatusUnprocessableEntity, "parse_error", err.Error())
+	// Reserve the identifier before starting work so a slow analysis can be
+	// polled through the same resource URL. The analyzer updates this row with
+	// the final result when it completes.
+	req.ID = ulid.Make().String()
+	pending := &domain.Submission{ID: req.ID, Channel: req.Channel, Kind: req.Kind, SubmittedBy: req.SubmittedBy, OrgID: req.OrgID, ReceivedAt: time.Now().UTC(), Status: domain.StatusProcessing}
+	if s.app.Store != nil {
+		if err := s.app.Store.SaveSubmission(r.Context(), pending, false); err != nil {
+			s.log.Error().Err(err).Msg("reserve analysis")
+			writeError(w, http.StatusInternalServerError, "storage_error", "could not reserve analysis")
+			return
 		}
-		return
 	}
-	// TODO(F-4.1.2): if analysis exceeds the sync budget return 202 + Location: /v1/analyses/{id}.
-	writeJSON(w, http.StatusOK, toResponse(sub))
+	type analysisResult struct {
+		sub *domain.Submission
+		err error
+	}
+	result := make(chan analysisResult, 1)
+	jobCtx := context.WithoutCancel(r.Context())
+	go func() {
+		sub, err := s.app.Analyzer.Analyze(jobCtx, req)
+		if err != nil && s.app.Store != nil {
+			_ = s.app.Store.DeleteSubmission(context.Background(), req.ID)
+		}
+		result <- analysisResult{sub: sub, err: err}
+	}()
+	syncBudget := s.syncBudget
+	if syncBudget <= 0 {
+		syncBudget = 10 * time.Second
+	}
+	timer := time.NewTimer(syncBudget)
+	defer timer.Stop()
+	select {
+	case done := <-result:
+		if done.err != nil {
+			s.writeAnalyzeError(w, done.err)
+			return
+		}
+		writeJSON(w, http.StatusOK, toResponse(done.sub))
+	case <-timer.C:
+		w.Header().Set("Location", "/v1/analyses/"+req.ID)
+		w.Header().Set("Retry-After", "1")
+		writeJSON(w, http.StatusAccepted, toResponse(pending))
+	}
+}
+
+func (s *Server) writeAnalyzeError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, parse.ErrNotImplemented):
+		writeError(w, http.StatusNotImplemented, "not_implemented", err.Error())
+	case errors.Is(err, parse.ErrTooLarge):
+		writeError(w, http.StatusRequestEntityTooLarge, "too_large", err.Error())
+	case errors.Is(err, parse.ErrEmpty):
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+	default:
+		writeError(w, http.StatusUnprocessableEntity, "parse_error", err.Error())
+	}
 }
 
 func (s *Server) handleGetAnalysis(w http.ResponseWriter, r *http.Request) {

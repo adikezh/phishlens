@@ -36,6 +36,7 @@ const (
 type Status string
 
 const (
+	StatusProcessing     Status = "processing"
 	StatusAnalyzed       Status = "analyzed"
 	StatusInReview       Status = "in_review"
 	StatusConfirmedPhish Status = "confirmed_phish"

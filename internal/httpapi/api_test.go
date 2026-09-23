@@ -63,6 +63,55 @@ func TestAnalyzeJSONAndGet(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, r3.StatusCode)
 }
 
+func TestAnalyzeReturns202ForSlowJob(t *testing.T) {
+	llmServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(100 * time.Millisecond)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"model":"test","message":{"content":"{\"verdict_opinion\":\"suspicious\",\"attack_type\":\"none\",\"summary\":\"review\",\"social_engineering_tactics\":[],\"recommended_action\":\"review\",\"questions_for_analyst\":[]}"}}`)
+	}))
+	defer llmServer.Close()
+	cfg := config.Default()
+	cfg.Storage.DSN = "file:" + filepath.ToSlash(filepath.Join(t.TempDir(), "slow.db"))
+	cfg.Analysis.DataDir, cfg.Analysis.BrandsFile, cfg.Analysis.WeightsFile, cfg.Analysis.PromptsDir = "", "", "", ""
+	cfg.Server.RateLimitRPS = 0
+	cfg.Analysis.Timeout = time.Second
+	cfg.LLM.Enabled = true
+	cfg.LLM.Timeout = time.Second
+	cfg.LLM.Providers = []config.LLMProvider{{Name: "slow", Type: "ollama", BaseURL: llmServer.URL, Model: "test"}}
+	a, err := app.New(context.Background(), cfg, zerolog.Nop(), app.Options{Offline: true})
+	require.NoError(t, err)
+	defer a.Close()
+	api := New(a)
+	api.syncBudget = 10 * time.Millisecond
+	srv := httptest.NewServer(api.Handler(func(chi.Router) {}))
+	defer srv.Close()
+
+	body := strings.NewReader(`{"text":"Please review https://example.test"}`)
+	resp, err := http.Post(srv.URL+"/v1/analyze", "application/json", body)
+	require.NoError(t, err)
+	var pending AnalyzeResponse
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&pending))
+	resp.Body.Close()
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+	require.Equal(t, "/v1/analyses/"+pending.ID, resp.Header.Get("Location"))
+	require.Equal(t, domain.StatusProcessing, pending.Status)
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		got, err := http.Get(srv.URL + "/v1/analyses/" + pending.ID)
+		if err == nil {
+			var out AnalyzeResponse
+			_ = json.NewDecoder(got.Body).Decode(&out)
+			got.Body.Close()
+			if got.StatusCode == http.StatusOK && out.Result != nil {
+				return
+			}
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatal("slow analysis did not complete through polling resource")
+}
+
 func TestMultipartPersistenceAndAnalystDeletion(t *testing.T) {
 	srv, a := newTestServer(t)
 	admin, err := GenerateKey()

@@ -18,6 +18,7 @@ import (
 
 // Request is one analysis job.
 type Request struct {
+	ID          string
 	Channel     domain.Channel
 	Kind        domain.Kind
 	Data        []byte // eml / msg / image bytes, or text when Kind == text
@@ -57,13 +58,16 @@ func (an *Analyzer) Analyze(ctx context.Context, req Request) (*domain.Submissio
 		req.Channel = domain.ChannelAPI
 	}
 	sub := &domain.Submission{
-		ID:          ulid.Make().String(),
+		ID:          req.ID,
 		Channel:     req.Channel,
 		Kind:        req.Kind,
 		SubmittedBy: req.SubmittedBy,
 		OrgID:       req.OrgID,
 		ReceivedAt:  time.Now().UTC(),
 		Status:      domain.StatusAnalyzed,
+	}
+	if sub.ID == "" {
+		sub.ID = ulid.Make().String()
 	}
 	var warnings []string
 	var stages []domain.Stage

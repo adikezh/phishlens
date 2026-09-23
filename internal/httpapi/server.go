@@ -20,15 +20,16 @@ import (
 
 // Server holds dependencies for handlers.
 type Server struct {
-	app     *app.App
-	log     zerolog.Logger
-	limiter *rateLimiter
-	oidc    *oidcAuth
+	app        *app.App
+	log        zerolog.Logger
+	limiter    *rateLimiter
+	oidc       *oidcAuth
+	syncBudget time.Duration
 }
 
 // New builds the server.
 func New(a *app.App) *Server {
-	s := &Server{app: a, log: a.Log.With().Str("component", "http").Logger(), limiter: newRateLimiter(a.Cfg.Server.RateLimitRPS)}
+	s := &Server{app: a, log: a.Log.With().Str("component", "http").Logger(), limiter: newRateLimiter(a.Cfg.Server.RateLimitRPS), syncBudget: 10 * time.Second}
 	if a.Cfg.Auth.OIDC.Enabled {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
