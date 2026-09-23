@@ -1,5 +1,5 @@
 package reputation
 
-// The in-memory TTL cache is in client.go. Persistent backing in the
-// reputation_cache table remains an operational enhancement; callers still
-// receive bounded, fail-closed-to-unknown behavior after a restart.
+// The in-memory TTL cache is in client.go. When an application store is
+// attached, provider responses are also persisted in reputation_cache; a
+// database failure still degrades to the bounded in-memory/unknown behavior.

@@ -104,6 +104,14 @@ type IOC struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+// ReputationCacheEntry is a privacy-safe provider response keyed only by a
+// normalized indicator key (for example rdap:example.com).
+type ReputationCacheEntry struct {
+	Key       string
+	Value     string
+	ExpiresAt time.Time
+}
+
 // AuditEntry records a privileged action.
 type AuditEntry struct {
 	OrgID   string
@@ -123,6 +131,8 @@ type Store interface {
 	DeleteSubmission(ctx context.Context, id string) error
 	PurgeOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
 	ListIOCs(ctx context.Context, orgID string, since time.Time) ([]IOC, error)
+	GetReputationCache(ctx context.Context, key string) (*ReputationCacheEntry, error)
+	PutReputationCache(ctx context.Context, key, value string, expiresAt time.Time) error
 
 	ListEntries(ctx context.Context, orgID string, kind ListKind) ([]ListEntry, error)
 	AddEntry(ctx context.Context, e ListEntry) error

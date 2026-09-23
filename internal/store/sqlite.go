@@ -99,6 +99,35 @@ func (s *SQLite) queryRowContext(ctx context.Context, query string, args ...any)
 	return s.db.QueryRowContext(ctx, s.sql(query), args...)
 }
 
+// GetReputationCache returns a non-expired provider response.
+func (s *SQLite) GetReputationCache(ctx context.Context, key string) (*ReputationCacheEntry, error) {
+	var value, expires string
+	if err := s.queryRowContext(ctx, `SELECT value, expires_at FROM reputation_cache WHERE key = ?`, key).Scan(&value, &expires); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	expiresAt, err := time.Parse(time.RFC3339Nano, expires)
+	if err != nil {
+		return nil, fmt.Errorf("store: reputation cache expiry: %w", err)
+	}
+	if !time.Now().Before(expiresAt) {
+		_, _ = s.execContext(ctx, `DELETE FROM reputation_cache WHERE key = ?`, key)
+		return nil, ErrNotFound
+	}
+	return &ReputationCacheEntry{Key: key, Value: value, ExpiresAt: expiresAt}, nil
+}
+
+// PutReputationCache upserts a bounded provider response.
+func (s *SQLite) PutReputationCache(ctx context.Context, key, value string, expiresAt time.Time) error {
+	if key == "" || value == "" || expiresAt.IsZero() {
+		return fmt.Errorf("store: invalid reputation cache entry")
+	}
+	_, err := s.execContext(ctx, `INSERT INTO reputation_cache(key, value, expires_at) VALUES(?, ?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, expires_at=excluded.expires_at`, key, value, expiresAt.UTC().Format(time.RFC3339Nano))
+	return err
+}
+
 func ts(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }
 
 func parseTS(s string) time.Time {

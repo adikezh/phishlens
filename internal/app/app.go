@@ -140,6 +140,9 @@ func New(ctx context.Context, cfg *config.Config, log zerolog.Logger, opts Optio
 			}
 		}
 		a.Store = st
+		if a.Rep != nil {
+			a.Rep.SetPersistentCache(a.Store)
+		}
 		// custom brands from DB (F-4.3.4)
 		if cfg.Analysis.CustomBrandsEnabled {
 			if custom, err := st.ListBrands(ctx, ""); err == nil {

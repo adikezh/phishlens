@@ -94,8 +94,8 @@ that require external accounts, providers, or deployment-specific decisions.
 - Local `govulncheck ./...` reports no vulnerabilities in reachable code paths;
   one unrelated vulnerability remains in a required-but-unreachable module.
 - Reputation HTTP/DNS/RDAP providers now have per-provider circuit breakers
-  (three failures, 30-second cooldown); persistent cross-restart cache remains
-  an operational enhancement.
+  (three failures, 30-second cooldown) and a privacy-safe persistent cache with
+  TTL across application restarts.
 
 ## Community v1 gates still to close
 

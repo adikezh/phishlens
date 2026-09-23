@@ -6,6 +6,7 @@ package reputation
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -18,6 +19,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/phishlens/phishlens/internal/config"
+	"github.com/phishlens/phishlens/internal/store"
 )
 
 // ErrNotImplemented marks stubbed sources.
@@ -36,6 +38,14 @@ type Client struct {
 	virusTotalURL   string
 	breakers        map[string]*circuitBreaker
 	breakerMu       sync.Mutex
+	store           PersistentCache
+}
+
+// PersistentCache is implemented by store.Store without coupling provider
+// code to a particular database driver.
+type PersistentCache interface {
+	GetReputationCache(context.Context, string) (*store.ReputationCacheEntry, error)
+	PutReputationCache(context.Context, string, string, time.Time) error
 }
 
 // New builds a client; dnsResolver is "host:port" or "" for the system resolver.
@@ -89,6 +99,74 @@ func (c *Client) observeProvider(name string, err error) {
 	}
 }
 
+// SetPersistentCache attaches the already-migrated application store. Cache
+// values contain provider responses only; no message bodies or user identity.
+func (c *Client) SetPersistentCache(cache PersistentCache) { c.store = cache }
+
+func (c *Client) getListCache(ctx context.Context, key string) (listResult, bool) {
+	if v, ok := c.cache.get(key); ok {
+		return v.(listResult), true
+	}
+	if c.store == nil {
+		return listResult{}, false
+	}
+	entry, err := c.store.GetReputationCache(ctx, key)
+	if err != nil {
+		return listResult{}, false
+	}
+	var persisted struct {
+		Listed bool   `json:"listed"`
+		Source string `json:"source"`
+	}
+	if json.Unmarshal([]byte(entry.Value), &persisted) != nil {
+		return listResult{}, false
+	}
+	result := listResult{listed: persisted.Listed, source: persisted.Source}
+	c.cache.set(key, result, time.Until(entry.ExpiresAt))
+	return result, true
+}
+
+func (c *Client) setListCache(ctx context.Context, key string, result listResult, ttl time.Duration) {
+	c.cache.set(key, result, ttl)
+	if c.store != nil {
+		value, err := json.Marshal(struct {
+			Listed bool   `json:"listed"`
+			Source string `json:"source"`
+		}{Listed: result.listed, Source: result.source})
+		if err == nil {
+			_ = c.store.PutReputationCache(ctx, key, string(value), time.Now().Add(ttl))
+		}
+	}
+}
+
+func (c *Client) getAgeCache(ctx context.Context, key string) (time.Duration, bool) {
+	if v, ok := c.cache.get(key); ok {
+		return v.(time.Duration), true
+	}
+	if c.store == nil {
+		return 0, false
+	}
+	entry, err := c.store.GetReputationCache(ctx, key)
+	if err != nil {
+		return 0, false
+	}
+	var age time.Duration
+	if json.Unmarshal([]byte(entry.Value), &age) != nil {
+		return 0, false
+	}
+	c.cache.set(key, age, time.Until(entry.ExpiresAt))
+	return age, true
+}
+
+func (c *Client) setAgeCache(ctx context.Context, key string, age, ttl time.Duration) {
+	c.cache.set(key, age, ttl)
+	if c.store != nil {
+		if value, err := json.Marshal(age); err == nil {
+			_ = c.store.PutReputationCache(ctx, key, string(value), time.Now().Add(ttl))
+		}
+	}
+}
+
 // AddLocalBlock adds a domain to the in-memory local TI list.
 func (c *Client) AddLocalBlock(domain string) {
 	c.local[strings.ToLower(domain)] = struct{}{}
@@ -107,8 +185,7 @@ func (c *Client) IPListed(ctx context.Context, ip string) (bool, string, error) 
 		return false, "", nil
 	}
 	key := "dnsbl:" + ip
-	if v, ok := c.cache.get(key); ok {
-		r := v.(listResult)
+	if r, ok := c.getListCache(ctx, key); ok {
 		return r.listed, r.source, nil
 	}
 	var lastErr error
@@ -136,7 +213,7 @@ func (c *Client) IPListed(ctx context.Context, ip string) (bool, string, error) 
 				}
 				if strings.HasPrefix(a, "127.") {
 					c.observeProvider("dnsbl", nil)
-					c.cache.set(key, listResult{true, zone}, 6*time.Hour)
+					c.setListCache(ctx, key, listResult{true, zone}, 6*time.Hour)
 					return true, zone, nil
 				}
 			}
@@ -153,7 +230,7 @@ func (c *Client) IPListed(ctx context.Context, ip string) (bool, string, error) 
 			c.observeProvider("abuseipdb", err)
 		}
 		if err == nil && listed {
-			c.cache.set(key, listResult{true, "abuseipdb"}, 6*time.Hour)
+			c.setListCache(ctx, key, listResult{true, "abuseipdb"}, 6*time.Hour)
 			return true, "abuseipdb", nil
 		}
 		if err != nil {
@@ -163,7 +240,7 @@ func (c *Client) IPListed(ctx context.Context, ip string) (bool, string, error) 
 	if lastErr != nil {
 		return false, "", fmt.Errorf("dnsbl: %w", lastErr)
 	}
-	c.cache.set(key, listResult{false, ""}, 6*time.Hour)
+	c.setListCache(ctx, key, listResult{false, ""}, 6*time.Hour)
 	return false, "", nil
 }
 
@@ -174,8 +251,7 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 		return true, "local", nil
 	}
 	key := "domain-listed:" + domain
-	if v, ok := c.cache.get(key); ok {
-		r := v.(listResult)
+	if r, ok := c.getListCache(ctx, key); ok {
 		return r.listed, r.source, nil
 	}
 	providerError := false
@@ -189,7 +265,7 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 			c.observeProvider("urlhaus", err)
 		}
 		if err == nil && listed {
-			c.cache.set(key, listResult{true, "urlhaus"}, 12*time.Hour)
+			c.setListCache(ctx, key, listResult{true, "urlhaus"}, 12*time.Hour)
 			return true, "urlhaus", nil
 		} else if err != nil {
 			providerError = true
@@ -205,7 +281,7 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 			c.observeProvider("openphish", err)
 		}
 		if err == nil && listed {
-			c.cache.set(key, listResult{true, "openphish"}, 12*time.Hour)
+			c.setListCache(ctx, key, listResult{true, "openphish"}, 12*time.Hour)
 			return true, "openphish", nil
 		} else if err != nil {
 			providerError = true
@@ -221,7 +297,7 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 			c.observeProvider("safebrowsing", err)
 		}
 		if err == nil && listed {
-			c.cache.set(key, listResult{true, "safebrowsing"}, 12*time.Hour)
+			c.setListCache(ctx, key, listResult{true, "safebrowsing"}, 12*time.Hour)
 			return true, "safebrowsing", nil
 		}
 		if err != nil {
@@ -229,7 +305,7 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 		}
 	}
 	if !providerError {
-		c.cache.set(key, listResult{false, ""}, 6*time.Hour)
+		c.setListCache(ctx, key, listResult{false, ""}, 6*time.Hour)
 	}
 	return false, "", nil
 }
@@ -262,8 +338,8 @@ func (c *Client) DomainAge(ctx context.Context, domain string) (time.Duration, b
 		return 0, false, nil
 	}
 	key := "rdap:" + domain
-	if v, ok := c.cache.get(key); ok {
-		return v.(time.Duration), true, nil
+	if age, ok := c.getAgeCache(ctx, key); ok {
+		return age, true, nil
 	}
 	if err := c.allowProvider("rdap"); err != nil {
 		return 0, false, nil
@@ -279,7 +355,7 @@ func (c *Client) DomainAge(ctx context.Context, domain string) (time.Duration, b
 	if ttl <= 0 {
 		ttl = 7 * 24 * time.Hour
 	}
-	c.cache.set(key, age, ttl)
+	c.setAgeCache(ctx, key, age, ttl)
 	return age, true, nil
 }
 
