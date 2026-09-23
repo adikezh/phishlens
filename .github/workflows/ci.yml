@@ -39,6 +39,8 @@ jobs:
         run: docker run --rm -v "$GITHUB_WORKSPACE/deploy/helm:/chart" alpine/helm:3.17.3 lint /chart
       - name: container build
         run: docker build --tag phishlens:ci .
+      - name: container runtime smoke
+        run: bash scripts/container_smoke.sh phishlens:ci
       - name: OCR container build
         run: docker build --file deploy/ocr/Dockerfile --tag phishlens-ocr:ci .
 
