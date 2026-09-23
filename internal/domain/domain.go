@@ -29,6 +29,7 @@ const (
 	KindEML   Kind = "eml"
 	KindMSG   Kind = "msg"
 	KindImage Kind = "image"
+	KindPDF   Kind = "pdf"
 )
 
 // Status is the review lifecycle of a submission (F-4.6).
@@ -226,6 +227,18 @@ type InlineImage struct {
 	Height    int    `json:"height,omitempty"`
 }
 
+// PDFInfo is static, non-rendering PDF evidence. The parser never executes
+// JavaScript, opens links, or extracts embedded files.
+type PDFInfo struct {
+	Pages         int      `json:"pages,omitempty"`
+	URLs          []string `json:"urls,omitempty"`
+	HasJavaScript bool     `json:"has_javascript,omitempty"`
+	HasOpenAction bool     `json:"has_open_action,omitempty"`
+	HasAutoAction bool     `json:"has_additional_actions,omitempty"`
+	HasForms      bool     `json:"has_forms,omitempty"`
+	HasEmbedded   bool     `json:"has_embedded_files,omitempty"`
+}
+
 // ParsedMail is the normalised representation every input converges to.
 type ParsedMail struct {
 	Headers     map[string][]string `json:"headers,omitempty"`
@@ -245,6 +258,7 @@ type ParsedMail struct {
 	Images      []InlineImage       `json:"images,omitempty"`
 	Language    string              `json:"language,omitempty"`
 	OCRText     string              `json:"ocr_text,omitempty"`
+	PDF         *PDFInfo            `json:"pdf,omitempty"`
 }
 
 // Header returns the first value of a header (case-insensitive canonical key).

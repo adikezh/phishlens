@@ -49,8 +49,9 @@
 | brand.sender_mismatch | F-4.3.3 | 35 | ✅ |
 | reputation.org_blocklist / org_allowlist | R-03 | 100/−30 | ✅ |
 | reputation.ip_listed | R-01 | 30 | ✅ DNSBL |
-| reputation.domain_listed | D-02/R-02 | 40 | интерфейс; источники — TODO |
-| reputation.domain_age | D-01 | 25 | интерфейс; RDAP — TODO |
+| reputation.domain_listed | D-02/R-02 | 40 | ✅ local list + OpenPhish + optional authenticated URLhaus |
+| reputation.domain_age | D-01 | 25 | ✅ RDAP registration event; provider failure degrades to unknown |
+| attachment.pdf_active | A-04 | 25 | ✅ bounded static scan; no rendering or action execution |
 | semantic.llm_phishing / suspicious / clean | F-4.4.3 | 25/10/−15 | ✅ |
 
-Не начаты: H-05, H-07, C-04, L-05, L-07, L-08, A-04, A-05.
+Не начаты: H-05, H-07, C-04, L-05, L-07, L-08, A-02 (rar/7z), A-03 (legacy OLE), A-05.

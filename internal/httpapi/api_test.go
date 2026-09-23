@@ -17,6 +17,7 @@ import (
 
 	"github.com/phishlens/phishlens/internal/app"
 	"github.com/phishlens/phishlens/internal/config"
+	"github.com/phishlens/phishlens/internal/domain"
 	"github.com/phishlens/phishlens/internal/store"
 )
 
@@ -144,6 +145,42 @@ func TestAnalystQueueActions(t *testing.T) {
 	r.Body.Close()
 }
 
+func TestUserCanReportSubmission(t *testing.T) {
+	srv, a := newTestServer(t)
+	key, err := GenerateKey()
+	require.NoError(t, err)
+	require.NoError(t, a.Store.CreateAPIKey(context.Background(), store.APIKey{
+		ID: ulid.Make().String(), Name: "employee", Role: RoleUser, OrgID: "org-a", KeyHash: HashKey(key), CreatedAt: time.Now(),
+	}))
+	body, _ := json.Marshal(map[string]any{"text": "Please review https://example.com", "channel": "outlook"})
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/analyze", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+key)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	var out AnalyzeResponse
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&out))
+	resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	req, _ = http.NewRequest(http.MethodPost, srv.URL+"/v1/submissions/"+out.ID+"/report", nil)
+	req.Header.Set("Authorization", "Bearer "+key)
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	resp.Body.Close()
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+	req, _ = http.NewRequest(http.MethodGet, srv.URL+"/v1/analyses/"+out.ID, nil)
+	req.Header.Set("Authorization", "Bearer "+key)
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	var got AnalyzeResponse
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&got))
+	resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, domain.StatusInReview, got.Status)
+}
+
 func TestDetectKind(t *testing.T) {
 	k, err := DetectKind("a.eml", "", []byte("From: x"))
 	require.NoError(t, err)
@@ -152,8 +189,9 @@ func TestDetectKind(t *testing.T) {
 	require.Equal(t, "image", string(k))
 	k, _ = DetectKind("m.msg", "", nil)
 	require.Equal(t, "msg", string(k))
-	_, err = DetectKind("x.pdf", "", nil)
-	require.Error(t, err)
+	k, err = DetectKind("x.pdf", "", nil)
+	require.NoError(t, err)
+	require.Equal(t, "pdf", string(k))
 	k, _ = DetectKind("", "", []byte{0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0})
 	require.Equal(t, "image", string(k))
 }

@@ -33,8 +33,9 @@ that require external accounts, providers, or deployment-specific decisions.
 - [x] Add fuzz tests for text/EML dispatch, HTML/URL extraction, and attachment listing paths.
 - [x] Docker Compose runtime smoke: init volume ownership, non-root image,
   read-only rootfs, no-new-privileges, and `/health` verified locally.
-- [ ] Decide whether PDF OCR belongs in Community or is a licensed Business
-  component; do not silently treat unsupported formats as analysed.
+- [x] Community PDF static analysis: bounded URL/text extraction and active
+  feature detection without rendering or executing PDF actions. PDF OCR remains
+  an optional OCR/Business extension.
 
 ## Business / external gates (not locally provable)
 

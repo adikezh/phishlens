@@ -1,7 +1,6 @@
 // Package attachment implements A-01 … A-06 on attachment metadata only —
 // contents are never executed (ТЗ §11).
 // TODO(A-02): rar/7z listing (nwaples/rardecode, bodgit/sevenzip).
-// TODO(A-03): legacy OLE macros (mscfb).  TODO(A-04): PDF links/JS (pdfcpu).
 // TODO(A-05): VirusTotal / MalwareBazaar hash lookup (reputation stage).
 package attachment
 
@@ -18,6 +17,7 @@ const (
 	IDArchiveExecutable = "attachment.archive_executable" // A-02
 	IDMacro             = "attachment.macro"              // A-03
 	IDHTMLActive        = "attachment.html_active"        // A-06
+	IDPDFActive         = "attachment.pdf_active"         // A-04
 )
 
 // Register adds attachment checks.
@@ -27,5 +27,6 @@ func Register(r *signals.Registry) {
 		signals.NewFunc(IDArchiveEncrypted, domain.CategoryAttachment, archive),
 		signals.NewFunc(IDMacro, domain.CategoryAttachment, macro),
 		signals.NewFunc(IDHTMLActive, domain.CategoryAttachment, htmlActive),
+		signals.NewFunc(IDPDFActive, domain.CategoryAttachment, pdfActive),
 	)
 }

@@ -76,6 +76,8 @@ func (p *Parser) Parse(ctx context.Context, kind domain.Kind, data []byte) (*dom
 		return p.MSG(data)
 	case domain.KindImage:
 		return p.Image(ctx, data)
+	case domain.KindPDF:
+		return p.PDF(data)
 	default:
 		return nil, fmt.Errorf("parse: unknown kind %q", kind)
 	}

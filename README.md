@@ -35,7 +35,7 @@ task build && task test && task run
 ```
 cmd/phishlens         точка входа (cobra)
 internal/domain       модель данных (Submission, ParsedMail, Signal, Analysis)
-internal/parse        eml / msg / text / image → ParsedMail
+internal/parse        eml / msg / text / image / pdf → ParsedMail
 internal/signals      одна папка на категорию, один файл на сигнал; registry
 internal/brands       brands.yaml, matcher (домен / ключевые слова / homoglyph)
 internal/reputation   DNSBL, RDAP, OpenPhish, optional authenticated URLhaus
