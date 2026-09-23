@@ -35,11 +35,11 @@ task build && task test && task run
 ```
 
 Для публикации контейнера в GHCR создайте semver-тег и отправьте его
-(например, текущий Community-релиз `v0.2.0`):
+(текущий проверенный Community-релиз — `v0.2.2`):
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v0.2.2
+git push origin v0.2.2
 ```
 
 Workflow `release.yml` соберёт образ с runtime-данными и опубликует версию тега

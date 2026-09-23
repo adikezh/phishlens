@@ -166,7 +166,9 @@ that require external accounts, providers, or deployment-specific decisions.
 - Sandbox client, SSRF checks, L-05 login-form signal, and Chrome image entrypoint are implemented; isolated deployment, egress proxy policy, and live browser smoke evidence remain external.
 - Pilot evidence: one organization, two weeks, at least 20 real submissions,
   measured false positives/negatives, and owner-approved weight changes.
-- Public demo and registry publication.
+- Public HTTPS demo remains open. Registry publication is closed for the
+  current Community release: `ghcr.io/adikezh/phishlens:v0.2.2` is published
+  and its `/health` endpoint was verified from the pulled image.
 - Periodic reports now persist department and review timestamps and include
   department breakdowns plus average review time; reaction-time interpretation
   still needs validation against a real pilot workflow.
