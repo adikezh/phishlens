@@ -63,9 +63,12 @@ that require external accounts, providers, or deployment-specific decisions.
 
 - [ ] Add a larger, licensed/synthetic regression corpus before making any
   accuracy claim beyond the three demo messages.
-- [ ] Add API/UI end-to-end tests against a started server, including upload
-  limits, browser-visible API-key roles, persistence, and deletion. Current
-  HTTP coverage uses httptest and the UI smoke uses a local started server.
+- [x] Black-box API/UI E2E script against a started server covers persistence,
+  retrieval, user-vs-admin queue RBAC, deletion, and browser-visible admin key
+  loading. Verified locally on 2026-09-23 with `python scripts/ui_smoke.py
+  http://127.0.0.1:18083 --admin-key <admin> --user-key <user>` against a
+  real `phishlens serve` process. Upload-limit coverage remains a separate
+  deployment check.
 - [x] Add deterministic local weight tuning from analyst labels; pilot owners
   still must review and approve any tuned weights before deployment.
 - [x] Add fuzz tests for text/EML dispatch, HTML/URL extraction, and attachment listing paths.
