@@ -278,6 +278,54 @@ func TestUserCanReportSubmission(t *testing.T) {
 	require.Equal(t, domain.StatusInReview, got.Status)
 }
 
+func TestAdminCanExportSubjectDataWithinOrg(t *testing.T) {
+	srv, a := newTestServer(t)
+	admin, err := GenerateKey()
+	require.NoError(t, err)
+	require.NoError(t, a.Store.CreateAPIKey(context.Background(), store.APIKey{
+		ID: ulid.Make().String(), Name: "admin", Role: RoleAdmin, OrgID: "org-a", KeyHash: HashKey(admin), CreatedAt: time.Now(),
+	}))
+
+	submit := func(subject string) string {
+		body, err := json.Marshal(map[string]any{
+			"text":         "From: sender@example.test\nSubject: Notice\n\nPlease review https://example.test",
+			"submitted_by": subject,
+		})
+		require.NoError(t, err)
+		req, err := http.NewRequest(http.MethodPost, srv.URL+"/v1/analyze", bytes.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer "+admin)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		var out AnalyzeResponse
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&out))
+		return out.ID
+	}
+
+	submit("person@example.test")
+	submit("other@example.test")
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/v1/privacy/export?subject=PERSON%40EXAMPLE.TEST", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+admin)
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Contains(t, resp.Header.Get("Content-Disposition"), "phishlens-subject-export.json")
+	var export SubjectExport
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&export))
+	require.Equal(t, "PERSON@EXAMPLE.TEST", export.Subject)
+	require.Len(t, export.Submissions, 1)
+	require.Equal(t, "person@example.test", export.Submissions[0].SubmittedBy)
+	if export.Submissions[0].Message != nil {
+		require.Empty(t, export.Submissions[0].Message.TextBody, "Community export must not include an unencrypted body")
+		require.Empty(t, export.Submissions[0].Message.HTMLBody, "Community export must not include an unencrypted body")
+	}
+}
+
 func TestAdminWebhookLifecycle(t *testing.T) {
 	t.Setenv("PL_ENC_KEY", strings.Repeat("ab", 32))
 	srv, a := newTestServer(t)

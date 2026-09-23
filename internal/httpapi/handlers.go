@@ -66,6 +66,15 @@ type MessageSummary struct {
 	PDF         *domain.PDFInfo     `json:"pdf,omitempty"`
 }
 
+// SubjectExport is the GDPR/РК personal-data export. It intentionally uses
+// the full domain submission because an authorized admin export may include a
+// stored encrypted message body; Community mode returns metadata only.
+type SubjectExport struct {
+	Subject     string               `json:"subject"`
+	GeneratedAt time.Time            `json:"generated_at"`
+	Submissions []*domain.Submission `json:"submissions"`
+}
+
 func toResponse(sub *domain.Submission) AnalyzeResponse {
 	resp := AnalyzeResponse{ID: sub.ID, Status: sub.Status, Channel: sub.Channel, Kind: sub.Kind, ReceivedAt: sub.ReceivedAt, ReviewedAt: sub.ReviewedAt, Department: sub.Department, Result: sub.Result}
 	if m := sub.Message; m != nil {
@@ -287,6 +296,41 @@ func (s *Server) handleListSubmissions(w http.ResponseWriter, r *http.Request) {
 		out = append(out, toResponse(sub))
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+func (s *Server) handleSubjectExport(w http.ResponseWriter, r *http.Request) {
+	if s.app.Store == nil {
+		writeError(w, http.StatusNotFound, "not_found", "storage disabled")
+		return
+	}
+	subject := strings.TrimSpace(r.URL.Query().Get("subject"))
+	if subject == "" || len(subject) > 320 || strings.ContainsAny(subject, "\r\n") {
+		writeError(w, http.StatusBadRequest, "bad_request", "subject email is required")
+		return
+	}
+	p := PrincipalFrom(r.Context())
+	const pageSize = 500
+	var submissions []*domain.Submission
+	for offset := 0; ; offset += pageSize {
+		page, err := s.app.Store.ListSubmissions(r.Context(), store.SubmissionFilter{
+			OrgID: p.OrgID, SubmittedBy: subject, Limit: pageSize, Offset: offset,
+		})
+		if err != nil {
+			s.log.Error().Err(err).Msg("export subject data")
+			writeError(w, http.StatusInternalServerError, "internal", "storage error")
+			return
+		}
+		submissions = append(submissions, page...)
+		if len(page) < pageSize {
+			break
+		}
+	}
+	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{
+		OrgID: p.OrgID, Actor: p.Name, Action: "privacy.subject_export",
+		Target: "subject:" + HashKey(subject), Details: "records=" + strconv.Itoa(len(submissions)),
+	})
+	w.Header().Set("Content-Disposition", `attachment; filename="phishlens-subject-export.json"`)
+	writeJSON(w, http.StatusOK, SubjectExport{Subject: subject, GeneratedAt: time.Now().UTC(), Submissions: submissions})
 }
 
 func (s *Server) handleReview(w http.ResponseWriter, r *http.Request) {

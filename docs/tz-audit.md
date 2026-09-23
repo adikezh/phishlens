@@ -20,7 +20,7 @@ customer pilot.
 | OCR container | Tesseract HTTP adapter with ru/en/kz data, limits, timeout and isolation | local Docker build/health smoke and hosted OCR build | Implemented and build-verified |
 | Sandbox | Remote Chrome client with SSRF checks and isolated image | sandbox unit tests and Dockerfile | Code implemented; egress proxy and browser smoke remain external |
 | Performance and reliability | Offline p95 gate for 50 concurrent analyses; timeouts/circuit breakers/degraded warnings | `docs/performance.md`, local test, hosted race/build | Partially verified; full-provider p95 is deployment-specific |
-| Privacy/security | no-body Community default, AES-GCM option, PII redaction, deletion, TLS, rate limiting, non-executing parsers | privacy/threat-model docs, tests, CI security jobs | Implemented locally; deployment controls need operator evidence |
+| Privacy/security | no-body Community default, AES-GCM option, PII redaction, subject export/deletion, TLS, rate limiting, non-executing parsers | privacy/threat-model docs, API lifecycle tests, CI security jobs | Implemented locally; identity/legal/deployment controls need operator evidence |
 
 ## Release gates still requiring external state
 

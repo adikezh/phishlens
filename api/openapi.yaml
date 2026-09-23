@@ -90,6 +90,14 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: "#/components/schemas/AnalyzeResponse" } }
+  /v1/privacy/export:
+    get:
+      summary: Экспорт персональных данных субъекта (admin)
+      parameters:
+        - { name: subject, in: query, required: true, schema: { type: string, format: email } }
+      responses:
+        "200": { description: JSON-архив данных субъекта }
+        "400": { $ref: "#/components/responses/Error" }
   /v1/submissions/{id}:
     get:
       summary: Обращение по ID (analyst/admin)

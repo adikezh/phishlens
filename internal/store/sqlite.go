@@ -411,6 +411,10 @@ func (s *SQLite) ListSubmissions(ctx context.Context, f SubmissionFilter) ([]*do
 		q += ` AND s.org_id = ?`
 		args = append(args, f.OrgID)
 	}
+	if f.SubmittedBy != "" {
+		q += ` AND lower(s.submitted_by) = lower(?)`
+		args = append(args, f.SubmittedBy)
+	}
 	if f.Verdict != "" {
 		q += ` AND a.verdict = ?`
 		args = append(args, string(f.Verdict))

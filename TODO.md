@@ -125,6 +125,9 @@ that require external accounts, providers, or deployment-specific decisions.
 - `phishlens backup --out ...` creates a validated SQLite snapshot via
   `VACUUM INTO`; `phishlens restore --in ... --force` validates integrity before
   atomic replacement. PostgreSQL backup remains a DBA/platform responsibility.
+- `GET /v1/privacy/export?subject=...` provides an org-scoped, audited subject
+  export; Community exports metadata only, while explicitly enabled Business
+  storage can return the decrypted message to an authorized admin.
 
 ## Community v1 gates still to close
 

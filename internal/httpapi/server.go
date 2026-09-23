@@ -60,6 +60,7 @@ func (s *Server) Routes(r chi.Router) {
 		v1.Get("/demos", s.handleDemos)
 
 		v1.With(requireRole(RoleAnalyst, RoleAdmin)).Get("/submissions", s.handleListSubmissions)
+		v1.With(requireRole(RoleAdmin)).Get("/privacy/export", s.handleSubjectExport)
 		v1.With(requireRole(RoleAnalyst, RoleAdmin)).Get("/submissions/{id}", s.handleGetAnalysis)
 		v1.With(requireRole(RoleAnalyst, RoleAdmin)).Patch("/submissions/{id}", s.handleReview)
 		v1.With(requireRole(RoleAnalyst, RoleAdmin)).Post("/submissions/{id}/block-domain", s.handleBlockDomain)
