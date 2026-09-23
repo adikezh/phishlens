@@ -16,6 +16,10 @@ that require external accounts, providers, or deployment-specific decisions.
   brands, statistics, and analyst review status.
 - Confirmed phishing IOCs are retained without message bodies and export as
   STIX 2.1 or MISP JSON through `phishlens ioc export`.
+- Configured Wazuh HTTP delivery sends thresholded, privacy-safe verdict events
+  with Basic Auth; unavailable Wazuh is reported as a degraded notification.
+- `phishlens report` now emits Markdown, minimal valid DOCX, and PDF formats
+  from privacy-safe aggregate statistics.
 - Analyst API actions now support campaign grouping, blocklisting a domain from
   a submission, and local incident escalation with audit records.
 - Community storage defaults to metadata/signals only; message bodies require
@@ -42,11 +46,11 @@ that require external accounts, providers, or deployment-specific decisions.
 - IMAP, Microsoft Graph, Telegram, Outlook/Gmail add-in host validation.
 - Configure and verify a real URLhaus Auth-Key; without it the provider is explicitly degraded to unknown.
 - Live Safe Browsing/AbuseIPDB/VirusTotal accounts and rate limits.
-- OIDC, multi-tenant production isolation, SIEM/SOAR account integration.
+- OIDC, multi-tenant production isolation, live TheHive/IRIS/Jira account integration.
 - Sandbox isolation and browser detonation evidence.
 - Pilot evidence: one organization, two weeks, at least 20 real submissions,
   measured false positives/negatives, and owner-approved weight changes.
-- Public demo, hosted CI, registry publication, and operational backup/restore.
+- Public demo, registry publication, and operational backup/restore.
 
 ## Required release evidence
 

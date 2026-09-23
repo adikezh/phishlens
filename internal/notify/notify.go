@@ -1,6 +1,6 @@
 // Package notify pushes verdicts to SIEM/SOAR and back to the reporter (ТЗ §4.9):
-// HMAC-signed webhook (F-4.9.2) is implemented; Wazuh (F-4.9.1), TheHive/IRIS/Jira
-// and e-mail replies are stubs behind the same Notifier interface.
+// HMAC-signed webhook and configured Wazuh HTTP delivery are implemented;
+// TheHive/IRIS/Jira and e-mail replies remain optional integrations.
 package notify
 
 import (
