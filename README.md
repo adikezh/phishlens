@@ -85,6 +85,7 @@ weights to -100..100. Review the output before using it as a pilot override.
 
 Схема конвейера и границы компонентов описаны в [architecture.md](docs/architecture.md),
 а сравнение с PhishTool, CheckPhish и Sublime — на `/landing`.
+Performance acceptance is documented in [performance.md](docs/performance.md).
 
 ## Что работает локально
 

@@ -95,6 +95,9 @@ that require external accounts, providers, or deployment-specific decisions.
 - PostgreSQL storage is implemented through pgx with the same Store contract;
   hosted CI runs migrations and CRUD/statistics integration tests against a
   disposable PostgreSQL service.
+- The TЗ offline performance gate is executable: 50 simultaneous text analyses
+  at `GOMAXPROCS=2`, with p95 ≤300 ms and no network/LLM/storage writes; see
+  `docs/performance.md`. Full-provider p95 and capacity remain deployment gates.
 - Local `govulncheck ./...` reports no vulnerabilities in reachable code paths;
   one unrelated vulnerability remains in a required-but-unreachable module.
 - Reputation HTTP/DNS/RDAP providers now have per-provider circuit breakers
