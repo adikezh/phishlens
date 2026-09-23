@@ -44,8 +44,8 @@ internal/score        веса, пороги, жёсткие правила, в�
 internal/store        SQLite (modernc) / PostgreSQL (pgx), миграции
 internal/httpapi      REST /v1/* (chi), /health, /metrics
 internal/web          UI анализа + очередь/кампании/дашборд/бренды (html/template + htmx)
-internal/notify       webhook (HMAC), Wazuh, TheHive (заглушки)
-internal/ingest       IMAP / Graph / Telegram приёмники (заглушки)
+internal/notify       webhook (HMAC), Wazuh, TheHive, SMTP reply
+internal/ingest       IMAP / Graph / Telegram приёмники с bounded polling
 data/                 brands.yaml, weights.yaml, словари, демо-письма
 docs/signals/         документация каждого сигнала
 ```

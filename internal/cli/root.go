@@ -49,6 +49,7 @@ func newRoot() *cobra.Command {
 		newReportCmd(),
 		newKeygenCmd(),
 		newVersionCmd(),
+		newHealthCmd(),
 	)
 	return root
 }

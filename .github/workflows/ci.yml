@@ -35,6 +35,8 @@ jobs:
         run: go run ./cmd/phishlens eval --dir testdata/eml --expected testdata/expected --no-llm --min-f1 0.9
       - name: helm lint
         run: docker run --rm -v "$GITHUB_WORKSPACE/deploy/helm:/chart" alpine/helm:3.17.3 lint /chart
+      - name: container build
+        run: docker build --tag phishlens:ci .
 
   security:
     runs-on: ubuntu-latest

@@ -28,7 +28,7 @@ services:
     tmpfs: ["/tmp"]
     security_opt: ["no-new-privileges:true"]
     healthcheck:
-      test: ["CMD", "/app/phishlens", "version"]
+      test: ["CMD", "/app/phishlens", "healthcheck", "--url", "http://127.0.0.1:8082/health"]
       interval: 30s
 
   # ollama:
