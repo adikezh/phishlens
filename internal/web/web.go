@@ -149,7 +149,7 @@ func (u *UI) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	lang := i18n.Normalize(r.FormValue("lang"))
-	req := app.Request{Channel: domain.ChannelWeb, Lang: lang, NoLLM: r.FormValue("no_llm") == "on"}
+	req := app.Request{Channel: domain.ChannelWeb, Lang: lang, NoLLM: r.FormValue("no_llm") == "on", Department: strings.TrimSpace(r.FormValue("department"))}
 	if f, hdr, err := r.FormFile("file"); err == nil && hdr.Size > 0 {
 		defer f.Close()
 		data, _ := io.ReadAll(io.LimitReader(f, maxBytes+1))

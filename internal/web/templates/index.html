@@ -42,6 +42,7 @@
             <option value="kz" {{if eq .Lang "kz"}}selected{{end}}>kz</option>
           </select>
         </label>
+        <label class="flex items-center gap-1"><span>Отдел</span><input name="department" class="w-28 rounded border px-2 py-0.5" placeholder="finance"></label>
         {{if .LLM}}<label class="flex items-center gap-1"><input type="checkbox" name="no_llm"> без LLM</label>{{end}}
         <button class="rounded bg-slate-900 px-4 py-1.5 text-white hover:bg-slate-700" type="submit">Проверить</button>
         <span id="spinner" class="htmx-indicator text-slate-500">анализ…</span>

@@ -67,12 +67,13 @@ type Webhook struct {
 
 // SubmissionFilter narrows ListSubmissions.
 type SubmissionFilter struct {
-	OrgID   string
-	Verdict domain.Verdict
-	Status  domain.Status
-	Since   time.Time
-	Limit   int
-	Offset  int
+	OrgID      string
+	Verdict    domain.Verdict
+	Status     domain.Status
+	Department string
+	Since      time.Time
+	Limit      int
+	Offset     int
 }
 
 // Stats is the /v1/stats payload (F-4.7.1, F-4.8.1).

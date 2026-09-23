@@ -80,6 +80,7 @@ paths:
       parameters:
         - { name: verdict, in: query, schema: { type: string, enum: [phishing, suspicious, clean, needs_review] } }
         - { name: status, in: query, schema: { type: string } }
+        - { name: department, in: query, schema: { type: string } }
         - { name: since, in: query, schema: { type: string, example: "30d" } }
         - { name: limit, in: query, schema: { type: integer, default: 50 } }
         - { name: offset, in: query, schema: { type: integer } }
@@ -139,12 +140,27 @@ paths:
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses:
         "201": { description: обращение эскалировано }
+  /v1/submissions/{id}/reply:
+    post:
+      summary: Ответить сотруднику безопасным шаблоном
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to: { type: string, format: email }
+      responses:
+        "202": { description: SMTP-ответ отправлен }
+        "502": { $ref: "#/components/responses/Error" }
   /v1/campaigns:
     get:
       summary: Группировка обращений в кампании (analyst/admin)
       parameters:
         - { name: verdict, in: query, schema: { type: string } }
         - { name: status, in: query, schema: { type: string } }
+        - { name: department, in: query, schema: { type: string } }
         - { name: limit, in: query, schema: { type: integer, default: 50 } }
       responses:
         "200": { description: OK }

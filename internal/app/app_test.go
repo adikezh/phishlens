@@ -15,6 +15,7 @@ import (
 	"github.com/phishlens/phishlens/internal/config"
 	"github.com/phishlens/phishlens/internal/domain"
 	"github.com/phishlens/phishlens/internal/report"
+	"github.com/phishlens/phishlens/internal/store"
 )
 
 type appAuthResolver struct{ txt map[string][]string }
@@ -136,6 +137,9 @@ func TestDeleteAndStats(t *testing.T) {
 	require.Equal(t, 1, st.Total)
 	require.Equal(t, 1, st.ByVerdict["phishing"])
 	require.Equal(t, 1, st.ByDepartment["finance"])
+	filtered, err := a.Store.ListSubmissions(context.Background(), store.SubmissionFilter{Department: "finance", Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, filtered, 1)
 	require.NotEmpty(t, st.TopSignals)
 	require.NoError(t, a.Store.UpdateSubmissionStatus(context.Background(), sub.ID, domain.StatusConfirmedPhish, "analyst"))
 	reviewed, err := a.Store.GetSubmission(context.Background(), sub.ID)

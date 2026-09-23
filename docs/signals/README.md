@@ -62,4 +62,6 @@
 | attachment.pdf_active | A-04 | 25 | ✅ bounded static scan; no rendering or action execution |
 | semantic.llm_phishing / suspicious / clean | F-4.4.3 | 25/10/−15 | ✅ |
 
-Не начаты: L-05, A-05.
+Все 60 зарегистрированных сигналов имеют отдельную страницу; parity проверяется
+`internal/signals/docs_test.go`. L-05 (login form) и A-05 (VirusTotal hash-only)
+реализованы, но их live-provider/host evidence остаётся внешним gate.

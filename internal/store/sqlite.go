@@ -419,6 +419,10 @@ func (s *SQLite) ListSubmissions(ctx context.Context, f SubmissionFilter) ([]*do
 		q += ` AND s.status = ?`
 		args = append(args, string(f.Status))
 	}
+	if f.Department != "" {
+		q += ` AND s.department = ?`
+		args = append(args, f.Department)
+	}
 	if !f.Since.IsZero() {
 		q += ` AND s.received_at >= ?`
 		args = append(args, ts(f.Since))

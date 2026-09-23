@@ -22,6 +22,7 @@ import (
 	"github.com/phishlens/phishlens/internal/brands"
 	"github.com/phishlens/phishlens/internal/config"
 	"github.com/phishlens/phishlens/internal/domain"
+	"github.com/phishlens/phishlens/internal/notify"
 	"github.com/phishlens/phishlens/internal/parse"
 	"github.com/phishlens/phishlens/internal/review"
 	"github.com/phishlens/phishlens/internal/store"
@@ -268,7 +269,7 @@ func (s *Server) handleListSubmissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	f := store.SubmissionFilter{OrgID: PrincipalFrom(r.Context()).OrgID, Verdict: domain.Verdict(q.Get("verdict")), Status: domain.Status(q.Get("status"))}
+	f := store.SubmissionFilter{OrgID: PrincipalFrom(r.Context()).OrgID, Verdict: domain.Verdict(q.Get("verdict")), Status: domain.Status(q.Get("status")), Department: strings.TrimSpace(q.Get("department"))}
 	f.Limit, _ = strconv.Atoi(q.Get("limit"))
 	f.Offset, _ = strconv.Atoi(q.Get("offset"))
 	if since := q.Get("since"); since != "" {
@@ -400,13 +401,36 @@ func (s *Server) handleCreateIncident(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, map[string]string{"submission_id": sub.ID, "status": string(domain.StatusEscalated)})
 }
 
+func (s *Server) handleReplySubmission(w http.ResponseWriter, r *http.Request) {
+	sub, _, ok := s.submissionForActor(w, r)
+	if !ok {
+		return
+	}
+	to := sub.SubmittedBy
+	var body struct {
+		To string `json:"to"`
+	}
+	if r.Body != nil {
+		_ = json.NewDecoder(r.Body).Decode(&body)
+	}
+	if strings.TrimSpace(body.To) != "" {
+		to = strings.TrimSpace(body.To)
+	}
+	if err := notify.SendEmailReply(r.Context(), s.app.Cfg.Ingest.IMAP, to, sub); err != nil {
+		writeError(w, http.StatusBadGateway, "reply_failed", err.Error())
+		return
+	}
+	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: sub.OrgID, Actor: PrincipalFrom(r.Context()).Name, Action: "submission.reply", Target: sub.ID})
+	writeJSON(w, http.StatusAccepted, map[string]string{"submission_id": sub.ID, "to": to})
+}
+
 func (s *Server) handleCampaigns(w http.ResponseWriter, r *http.Request) {
 	if s.app.Store == nil {
 		writeJSON(w, http.StatusOK, []review.Campaign{})
 		return
 	}
 	q := r.URL.Query()
-	f := store.SubmissionFilter{OrgID: PrincipalFrom(r.Context()).OrgID, Verdict: domain.Verdict(q.Get("verdict")), Status: domain.Status(q.Get("status"))}
+	f := store.SubmissionFilter{OrgID: PrincipalFrom(r.Context()).OrgID, Verdict: domain.Verdict(q.Get("verdict")), Status: domain.Status(q.Get("status")), Department: strings.TrimSpace(q.Get("department"))}
 	f.Limit, _ = strconv.Atoi(q.Get("limit"))
 	subs, err := review.NewQueue(s.app.Store).List(r.Context(), f)
 	if err != nil {
