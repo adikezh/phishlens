@@ -42,6 +42,10 @@ that require external accounts, providers, or deployment-specific decisions.
   H-07 detects known bulk-mailer headers on single-recipient messages.
 - C-06 recognizes valid 12-digit Kazakhstan IIN/BIN checksums as additional
   finance-request evidence.
+- A-02 lists ZIP, RAR4, and 7z entries without extracting files; encrypted
+  archives remain explicit signals and archive executable names are inspected.
+  RAR5 is intentionally opaque because safe metadata-only parsing is not yet
+  implemented.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.

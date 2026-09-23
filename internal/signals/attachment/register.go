@@ -1,6 +1,5 @@
 // Package attachment implements A-01 … A-06 on attachment metadata only —
 // contents are never executed (ТЗ §11).
-// TODO(A-02): rar/7z listing (nwaples/rardecode, bodgit/sevenzip).
 // TODO(A-05): VirusTotal / MalwareBazaar hash lookup (reputation stage).
 package attachment
 

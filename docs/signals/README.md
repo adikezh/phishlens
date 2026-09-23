@@ -39,7 +39,7 @@
 | link.obfuscated | L-04 | 15 | ✅ |
 | link.punycode / brand_lookalike / many_domains | D-03/D-04/L-06 | 20/30/8 | ✅ |
 | attachment.dangerous_ext / double_ext / rtl_override | A-01 | 30/25/30 | ✅ |
-| attachment.archive_encrypted / archive_executable | A-02 | 25/30 | ✅ zip; rar/7z listing — TODO |
+| attachment.archive_encrypted / archive_executable | A-02 | 25/30 | ✅ zip/RAR4/7z listing without extraction; RAR5 stays opaque |
 | attachment.macro | A-03 | 30 | ✅ OOXML; OLE — TODO |
 | attachment.html_active | A-06 | 25 | ✅ |
 | content.urgency / threat | C-01 | 10/10 | ✅ ru/en/kz |
@@ -57,4 +57,4 @@
 | attachment.pdf_active | A-04 | 25 | ✅ bounded static scan; no rendering or action execution |
 | semantic.llm_phishing / suspicious / clean | F-4.4.3 | 25/10/−15 | ✅ |
 
-Не начаты: C-04, L-05, A-02 (rar/7z), A-03 (legacy OLE), A-05.
+Не начаты: C-04, L-05, A-03 (legacy OLE), A-05.
