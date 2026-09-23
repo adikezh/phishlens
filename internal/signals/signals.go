@@ -14,6 +14,7 @@ import (
 	"github.com/phishlens/phishlens/internal/domain"
 	"github.com/phishlens/phishlens/internal/i18n"
 	"github.com/phishlens/phishlens/internal/refdata"
+	"github.com/phishlens/phishlens/internal/sandbox"
 )
 
 // BrandLookup is implemented by brands.Matcher (kept as an interface to avoid a
@@ -38,6 +39,11 @@ type ReputationLookup interface {
 	DomainAge(ctx context.Context, domain string) (age time.Duration, known bool, err error)
 }
 
+// LinkSandbox is the optional Business browser detonation service.
+type LinkSandbox interface {
+	Detonate(ctx context.Context, url string) (*sandbox.Result, error)
+}
+
 // Input is everything a check may look at.
 type Input struct {
 	Mail   *domain.ParsedMail
@@ -48,6 +54,7 @@ type Input struct {
 	Brands BrandLookup
 	Lists  ListLookup
 	Rep    ReputationLookup
+	Sandbox LinkSandbox
 	LLM    *domain.LLMExplain // set before the semantic stage
 }
 

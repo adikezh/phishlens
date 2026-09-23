@@ -116,6 +116,9 @@ func (an *Analyzer) Analyze(ctx context.Context, req Request) (*domain.Submissio
 	if a.Rep != nil {
 		in.Rep = a.Rep // a typed nil must not become a non-nil interface
 	}
+	if a.Sandbox != nil {
+		in.Sandbox = a.Sandbox
+	}
 	if a.Store != nil {
 		in.Lists = &storeLists{st: a.Store, org: req.OrgID}
 	}

@@ -1,6 +1,4 @@
 // Package link implements hyperlink heuristics L-01 … L-08 (ТЗ §4.2).
-// TODO(L-05): fetch target and look for <input type=password> on a non-brand domain (Business: via sandbox).
-// TODO(L-05): safe target form inspection (Business: via sandbox).
 package link
 
 import (
@@ -19,6 +17,7 @@ const (
 	IDManyDomains      = "link.many_domains"        // L-06
 	IDTrackingPixel    = "link.tracking_pixel"      // L-07
 	IDMissingUnsub     = "link.missing_unsubscribe" // L-07
+	IDLoginForm        = "link.login_form"          // L-05
 )
 
 // Register adds link checks.
@@ -33,5 +32,6 @@ func Register(r *signals.Registry) {
 		signals.NewFunc(IDManyDomains, domain.CategoryLink, manyDomains),
 		signals.NewFunc(IDTrackingPixel, domain.CategoryLink, trackingPixel),
 		signals.NewFunc(IDMissingUnsub, domain.CategoryLink, missingUnsubscribe),
+		signals.NewFunc(IDLoginForm, domain.CategoryLink, loginForm),
 	)
 }

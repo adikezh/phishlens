@@ -21,6 +21,7 @@ import (
 	"github.com/phishlens/phishlens/internal/parse"
 	"github.com/phishlens/phishlens/internal/refdata"
 	"github.com/phishlens/phishlens/internal/reputation"
+	"github.com/phishlens/phishlens/internal/sandbox"
 	"github.com/phishlens/phishlens/internal/score"
 	"github.com/phishlens/phishlens/internal/signals"
 	signalsall "github.com/phishlens/phishlens/internal/signals/all"
@@ -45,6 +46,7 @@ type App struct {
 	Registry *signals.Registry
 	Parser   *parse.Parser
 	Rep      *reputation.Client
+	Sandbox  sandbox.Runner
 	LLM      *llm.Service
 	Score    *score.Engine
 	Store    store.Store
@@ -102,6 +104,9 @@ func New(ctx context.Context, cfg *config.Config, log zerolog.Logger, opts Optio
 
 	if !opts.Offline {
 		a.Rep = reputation.New(cfg.Reputation, cfg.AuthChecks.DNSResolver, log)
+		if cfg.Sandbox.Enabled {
+			a.Sandbox = sandbox.New(cfg.Sandbox.URL, cfg.Sandbox.Screenshot)
+		}
 	}
 
 	if !opts.NoLLM {

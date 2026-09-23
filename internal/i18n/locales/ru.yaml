@@ -38,6 +38,7 @@ link.nonstandard_port: "Ссылка использует нестандартн
 link.shortener: "Ссылка через сокращатель %s — скрывает настоящий адрес."
 link.tracking_pixel: "В письме обнаружен признак tracking pixel (%s)."
 link.missing_unsubscribe: "В рекламном письме нет инструкции для отписки."
+link.login_form: "Ссылка открывает форму входа на неофициальном домене."
 link.obfuscated: "Ссылка замаскирована: %s."
 link.punycode: "Домен ссылки %s содержит punycode или смешанные алфавиты."
 link.brand_lookalike: "Ссылка ведёт на %s — домен, похожий на %s, но не принадлежащий бренду."

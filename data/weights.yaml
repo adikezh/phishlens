@@ -39,6 +39,7 @@ signals:
   link.many_domains: 8
   link.tracking_pixel: 8
   link.missing_unsubscribe: 8
+  link.login_form: 30
   # --- вложения (A-xx) ---
   attachment.dangerous_ext: 30
   attachment.double_ext: 25

@@ -118,7 +118,7 @@ that require external accounts, providers, or deployment-specific decisions.
 - Live OIDC IdP/group/tenant verification, multi-tenant production isolation,
   live TheHive account verification,
   and IRIS/Jira account integration.
-- Sandbox isolation and browser detonation evidence.
+- Sandbox client, SSRF checks, L-05 login-form signal, and Chrome image entrypoint are implemented; isolated deployment, egress proxy policy, and live browser smoke evidence remain external.
 - Pilot evidence: one organization, two weeks, at least 20 real submissions,
   measured false positives/negatives, and owner-approved weight changes.
 - Public demo, registry publication, and operational backup/restore.
