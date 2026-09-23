@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/textproto"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -58,6 +61,50 @@ func TestAnalyzeJSONAndGet(t *testing.T) {
 	require.NoError(t, err)
 	r3.Body.Close()
 	require.Equal(t, http.StatusNotFound, r3.StatusCode)
+}
+
+func TestMultipartPersistenceAndAnalystDeletion(t *testing.T) {
+	srv, a := newTestServer(t)
+	admin, err := GenerateKey()
+	require.NoError(t, err)
+	require.NoError(t, a.Store.CreateAPIKey(context.Background(), store.APIKey{ID: ulid.Make().String(), Name: "admin", Role: RoleAdmin, KeyHash: HashKey(admin), CreatedAt: time.Now()}))
+
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition", `form-data; name="file"; filename="notice.eml"`)
+	h.Set("Content-Type", "message/rfc822")
+	part, err := mw.CreatePart(h)
+	require.NoError(t, err)
+	_, err = io.WriteString(part, "From: sender@example.test\r\nSubject: Notice\r\n\r\nPlease review https://example.test")
+	require.NoError(t, err)
+	require.NoError(t, mw.Close())
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/v1/analyze", &body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer "+admin)
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	var out AnalyzeResponse
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&out))
+	resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.NotEmpty(t, out.ID)
+
+	req, err = http.NewRequest(http.MethodDelete, srv.URL+"/v1/submissions/"+out.ID, nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+admin)
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	resp.Body.Close()
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+	req, err = http.NewRequest(http.MethodGet, srv.URL+"/v1/analyses/"+out.ID, nil)
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	resp.Body.Close()
+	require.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
 func TestAuthAndRoles(t *testing.T) {
