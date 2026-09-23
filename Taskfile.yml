@@ -59,4 +59,4 @@ tasks:
   docker:
     desc: Собрать образ
     cmds:
-      - docker build -t ghcr.io/phishlens/phishlens:{{.VERSION}} .
+      - docker build -t ghcr.io/adikezh/phishlens:{{.VERSION}} .

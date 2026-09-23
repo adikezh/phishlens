@@ -34,15 +34,16 @@ go build -o bin/phishlens ./cmd/phishlens
 task build && task test && task run
 ```
 
-Для публикации контейнера в GHCR создайте semver-тег (`v1.0.0`) и отправьте его:
+Для публикации контейнера в GHCR создайте semver-тег и отправьте его
+(например, текущий Community-релиз `v0.2.0`):
 
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
 ```
 
-Workflow `release.yml` соберёт образ с runtime-данными и опубликует версии `v1.0.0`
-и `latest` в `ghcr.io/<owner>/phishlens`.
+Workflow `release.yml` соберёт образ с runtime-данными и опубликует версию тега
+и `latest` в [ghcr.io/adikezh/phishlens](https://github.com/adikezh/phishlens/pkgs/container/phishlens).
 
 ## Структура
 

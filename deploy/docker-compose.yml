@@ -10,7 +10,7 @@ services:
 
   phishlens:
     build: ..
-    image: ghcr.io/phishlens/phishlens:latest
+    image: ghcr.io/adikezh/phishlens:latest
     ports: ["8082:8082"]
     environment:
       PL_STORAGE_DSN: "file:/app/var/phishlens.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
