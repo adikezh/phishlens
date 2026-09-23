@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"mime"
+	"net"
 	"net/http"
 	"path"
 	"strconv"
@@ -19,6 +20,7 @@ import (
 	"github.com/phishlens/phishlens/internal/config"
 	"github.com/phishlens/phishlens/internal/domain"
 	"github.com/phishlens/phishlens/internal/parse"
+	"github.com/phishlens/phishlens/internal/review"
 	"github.com/phishlens/phishlens/internal/store"
 )
 
@@ -269,6 +271,84 @@ func (s *Server) handleReview(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "submission.review", Target: id, Details: body.Status})
 	writeJSON(w, http.StatusOK, map[string]string{"id": id, "status": body.Status})
+}
+
+func (s *Server) submissionForActor(w http.ResponseWriter, r *http.Request) (*domain.Submission, Principal, bool) {
+	if s.app.Store == nil {
+		writeError(w, http.StatusNotFound, "not_found", "storage disabled")
+		return nil, Principal{}, false
+	}
+	p := PrincipalFrom(r.Context())
+	sub, err := s.app.Store.GetSubmission(r.Context(), chi.URLParam(r, "id"))
+	if errors.Is(err, store.ErrNotFound) || (err == nil && p.OrgID != "" && sub.OrgID != p.OrgID) {
+		writeError(w, http.StatusNotFound, "not_found", "submission not found")
+		return nil, Principal{}, false
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", "storage error")
+		return nil, Principal{}, false
+	}
+	return sub, p, true
+}
+
+func (s *Server) handleBlockDomain(w http.ResponseWriter, r *http.Request) {
+	sub, p, ok := s.submissionForActor(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Domain string `json:"domain"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	domainName := strings.ToLower(strings.TrimSpace(body.Domain))
+	if domainName == "" && sub.Message != nil {
+		if len(sub.Message.Links) > 0 {
+			domainName = strings.ToLower(strings.TrimSpace(sub.Message.Links[0].Domain))
+		}
+		if domainName == "" {
+			domainName = strings.ToLower(strings.TrimSpace(sub.Message.From.Domain))
+		}
+	}
+	if domainName == "" || net.ParseIP(domainName) != nil || strings.ContainsAny(domainName, "/ @:") {
+		writeError(w, http.StatusBadRequest, "bad_request", "a domain is required")
+		return
+	}
+	if err := s.app.Store.AddEntry(r.Context(), store.ListEntry{OrgID: p.OrgID, Kind: store.ListBlock, Value: domainName, CreatedBy: p.Name, Note: "from submission " + sub.ID}); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	app.InvalidateListCache()
+	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "domain.block", Target: domainName, Details: sub.ID})
+	writeJSON(w, http.StatusCreated, map[string]string{"domain": domainName, "submission_id": sub.ID})
+}
+
+func (s *Server) handleCreateIncident(w http.ResponseWriter, r *http.Request) {
+	sub, p, ok := s.submissionForActor(w, r)
+	if !ok {
+		return
+	}
+	if err := s.app.Store.UpdateSubmissionStatus(r.Context(), sub.ID, domain.StatusEscalated, p.Name); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	_ = s.app.Store.Audit(r.Context(), store.AuditEntry{OrgID: p.OrgID, Actor: p.Name, Action: "incident.create", Target: sub.ID})
+	writeJSON(w, http.StatusCreated, map[string]string{"submission_id": sub.ID, "status": string(domain.StatusEscalated)})
+}
+
+func (s *Server) handleCampaigns(w http.ResponseWriter, r *http.Request) {
+	if s.app.Store == nil {
+		writeJSON(w, http.StatusOK, []review.Campaign{})
+		return
+	}
+	q := r.URL.Query()
+	f := store.SubmissionFilter{OrgID: PrincipalFrom(r.Context()).OrgID, Verdict: domain.Verdict(q.Get("verdict")), Status: domain.Status(q.Get("status"))}
+	f.Limit, _ = strconv.Atoi(q.Get("limit"))
+	subs, err := review.NewQueue(s.app.Store).List(r.Context(), f)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal", err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, review.Campaigns(subs))
 }
 
 func (s *Server) handleDeleteSubmission(w http.ResponseWriter, r *http.Request) {

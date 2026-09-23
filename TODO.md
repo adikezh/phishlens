@@ -16,6 +16,8 @@ that require external accounts, providers, or deployment-specific decisions.
   brands, statistics, and analyst review status.
 - Confirmed phishing IOCs are retained without message bodies and export as
   STIX 2.1 or MISP JSON through `phishlens ioc export`.
+- Analyst API actions now support campaign grouping, blocklisting a domain from
+  a submission, and local incident escalation with audit records.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.

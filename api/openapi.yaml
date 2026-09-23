@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: PhishLens API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     Анализ подозрительных писем: вердикт, скор, сигналы с доказательствами, объяснение.
     Аутентификация — `X-API-Key: pl_…` или `Authorization: Bearer pl_…`. `POST /v1/analyze`
@@ -104,6 +104,35 @@ paths:
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses:
         "204": { description: удалено }
+  /v1/submissions/{id}/block-domain:
+    post:
+      summary: Добавить домен обращения в blocklist
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                domain: { type: string, example: kaspi-login.top }
+      responses:
+        "201": { description: домен заблокирован }
+        "400": { $ref: "#/components/responses/Error" }
+  /v1/submissions/{id}/incident:
+    post:
+      summary: Эскалировать обращение в инцидент
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "201": { description: обращение эскалировано }
+  /v1/campaigns:
+    get:
+      summary: Группировка обращений в кампании (analyst/admin)
+      parameters:
+        - { name: verdict, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, default: 50 } }
+      responses:
+        "200": { description: OK }
   /v1/brands:
     get:
       security: []

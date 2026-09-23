@@ -100,6 +100,50 @@ func TestHealthAndBrands(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, r.StatusCode)
 }
 
+func TestAnalystQueueActions(t *testing.T) {
+	srv, a := newTestServer(t)
+	admin, err := GenerateKey()
+	require.NoError(t, err)
+	require.NoError(t, a.Store.CreateAPIKey(context.Background(), store.APIKey{ID: ulid.Make().String(), Name: "analyst", Role: RoleAdmin, KeyHash: HashKey(admin), CreatedAt: time.Now()}))
+
+	body, _ := json.Marshal(map[string]any{"text": "Срочно подтвердите код: https://kaspi-login.top/verify"})
+	r, err := http.Post(srv.URL+"/v1/analyze", "application/json", bytes.NewReader(body))
+	require.NoError(t, err)
+	var out AnalyzeResponse
+	require.NoError(t, json.NewDecoder(r.Body).Decode(&out))
+	r.Body.Close()
+	require.Equal(t, http.StatusOK, r.StatusCode)
+
+	request := func(method, path string, body []byte) *http.Response {
+		req, err := http.NewRequest(method, srv.URL+path, bytes.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer "+admin)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		return resp
+	}
+
+	r = request(http.MethodPost, "/v1/submissions/"+out.ID+"/block-domain", []byte(`{"domain":"kaspi-login.top"}`))
+	require.Equal(t, http.StatusCreated, r.StatusCode)
+	r.Body.Close()
+	r = request(http.MethodGet, "/v1/lists/block", nil)
+	require.Equal(t, http.StatusOK, r.StatusCode)
+	var entries []store.ListEntry
+	require.NoError(t, json.NewDecoder(r.Body).Decode(&entries))
+	r.Body.Close()
+	require.NotEmpty(t, entries)
+
+	r = request(http.MethodPost, "/v1/submissions/"+out.ID+"/incident", []byte(`{}`))
+	require.Equal(t, http.StatusCreated, r.StatusCode)
+	r.Body.Close()
+	r = request(http.MethodGet, "/v1/campaigns", nil)
+	require.Equal(t, http.StatusOK, r.StatusCode)
+	r.Body.Close()
+}
+
 func TestDetectKind(t *testing.T) {
 	k, err := DetectKind("a.eml", "", []byte("From: x"))
 	require.NoError(t, err)
