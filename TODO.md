@@ -81,6 +81,10 @@ that require external accounts, providers, or deployment-specific decisions.
   providers for untrusted transcription, then runs normal URL extraction and
   deterministic scoring. A live model/container and multilingual OCR quality
   corpus remain external evidence gates.
+- Image and inline-image parsing now computes perceptual hashes from decoded
+  pixels, brand matching consumes configured `logo_phash`, and external OCR
+  receives a re-encoded PNG without source EXIF metadata. Curated logo assets
+  and colour-scheme matching remain data/product gates.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.

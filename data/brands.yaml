@@ -6,8 +6,8 @@
 # esp_domains — домены рассылочных платформ/партнёров, с которых бренд реально шлёт
 # keywords    — слова в теме/теле, по которым определяется имитация (без учёта регистра)
 # locale      — kz | ru | global
-# colors      — фирменные цвета (hex) для сравнения скриншотов (TODO F-4.3.2)
-# logo_phash  — pHash логотипа (TODO F-4.3.2)
+# colors      — фирменные цвета (hex) for future screenshot colour matching
+# logo_phash  — pHash логотипа; matched against decoded inline images
 brands:
   # ---------- Казахстан: банки и финтех ----------
   - name: Kaspi

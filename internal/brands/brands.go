@@ -1,7 +1,8 @@
 // Package brands loads data/brands.yaml and detects which brand a message
 // belongs to or imitates (ТЗ §4.3): by sender domain, by link domains
 // (typosquat / homoglyph / Damerau–Levenshtein ≤ 2) and by keywords.
-// Logo pHash and colour matching are TODO(F-4.3.2).
+// Logo pHash matching is supported for decoded inline images; colour matching
+// remains an optional future signal.
 package brands
 
 import (
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/corona10/goimagehash"
 	"gopkg.in/yaml.v3"
 
 	"github.com/phishlens/phishlens/internal/domain"
@@ -265,10 +267,46 @@ func (m *Matcher) Match(mail *domain.ParsedMail) *domain.BrandMatch {
 			return &domain.BrandMatch{Name: name, Locale: m.locale(name), Method: "link_" + method, Score: score, Official: m.IsOfficial(name, mail.From.Domain)}
 		}
 	}
+	if name, score := m.matchLogo(mail.Images); name != "" {
+		return &domain.BrandMatch{Name: name, Locale: m.locale(name), Method: "logo", Score: score, Official: m.IsOfficial(name, mail.From.Domain)}
+	}
 	if name, score := m.MatchText(mail.Subject, mail.Text()); name != "" {
 		return &domain.BrandMatch{Name: name, Locale: m.locale(name), Method: "keyword", Score: score, Official: m.IsOfficial(name, mail.From.Domain)}
 	}
 	return nil
+}
+
+func (m *Matcher) matchLogo(images []domain.InlineImage) (string, float64) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	bestName, best := "", 0.0
+	for _, img := range images {
+		if img.PHash == "" {
+			continue
+		}
+		observed, err := goimagehash.ImageHashFromString(img.PHash)
+		if err != nil {
+			continue
+		}
+		for i := range m.brands {
+			if m.brands[i].LogoPHash == "" {
+				continue
+			}
+			logo, err := goimagehash.ImageHashFromString(m.brands[i].LogoPHash)
+			if err != nil {
+				continue
+			}
+			distance, err := observed.Distance(logo)
+			if err != nil || distance > 8 {
+				continue
+			}
+			score := 1 - float64(distance)/64
+			if score > best {
+				bestName, best = m.brands[i].Name, score
+			}
+		}
+	}
+	return bestName, best
 }
 
 func (m *Matcher) locale(name string) string {
