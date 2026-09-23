@@ -142,10 +142,9 @@ that require external accounts, providers, or deployment-specific decisions.
 - Pilot evidence: one organization, two weeks, at least 20 real submissions,
   measured false positives/negatives, and owner-approved weight changes.
 - Public demo, registry publication, and operational backup/restore.
-- Periodic report still lacks persisted department and review timestamps for
-  exact reaction-time/department breakdowns; the current report includes
-  verdicts, statuses, attack types, derived tactics, brands, signals, and
-  average analysis latency.
+- Periodic reports now persist department and review timestamps and include
+  department breakdowns plus average review time; reaction-time interpretation
+  still needs validation against a real pilot workflow.
 
 ## Required release evidence
 

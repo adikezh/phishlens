@@ -24,6 +24,7 @@ type Request struct {
 	Kind        domain.Kind
 	Data        []byte // eml / msg / image bytes, or text when Kind == text
 	SubmittedBy string
+	Department  string
 	OrgID       string
 	Lang        string
 	NoLLM       bool
@@ -63,6 +64,7 @@ func (an *Analyzer) Analyze(ctx context.Context, req Request) (*domain.Submissio
 		Channel:     req.Channel,
 		Kind:        req.Kind,
 		SubmittedBy: req.SubmittedBy,
+		Department:  req.Department,
 		OrgID:       req.OrgID,
 		ReceivedAt:  time.Now().UTC(),
 		Status:      domain.StatusAnalyzed,

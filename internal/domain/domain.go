@@ -127,6 +127,8 @@ type Submission struct {
 	Result      *Analysis   `json:"result,omitempty"`
 	Status      Status      `json:"status"`
 	ReviewedBy  string      `json:"reviewed_by,omitempty"`
+	ReviewedAt  time.Time   `json:"reviewed_at,omitempty"`
+	Department  string      `json:"department,omitempty"`
 	OrgID       string      `json:"org_id,omitempty"`
 }
 

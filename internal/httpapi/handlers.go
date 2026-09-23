@@ -35,6 +35,7 @@ type analyzeJSON struct {
 	Lang        string `json:"lang"`
 	NoLLM       bool   `json:"no_llm"`
 	SubmittedBy string `json:"submitted_by"`
+	Department  string `json:"department"`
 	Channel     string `json:"channel"`
 }
 
@@ -45,6 +46,8 @@ type AnalyzeResponse struct {
 	Channel    domain.Channel   `json:"channel"`
 	Kind       domain.Kind      `json:"kind"`
 	ReceivedAt time.Time        `json:"received_at"`
+	ReviewedAt time.Time        `json:"reviewed_at,omitempty"`
+	Department string           `json:"department,omitempty"`
 	Message    *MessageSummary  `json:"message,omitempty"`
 	Result     *domain.Analysis `json:"result,omitempty"`
 }
@@ -63,7 +66,7 @@ type MessageSummary struct {
 }
 
 func toResponse(sub *domain.Submission) AnalyzeResponse {
-	resp := AnalyzeResponse{ID: sub.ID, Status: sub.Status, Channel: sub.Channel, Kind: sub.Kind, ReceivedAt: sub.ReceivedAt, Result: sub.Result}
+	resp := AnalyzeResponse{ID: sub.ID, Status: sub.Status, Channel: sub.Channel, Kind: sub.Kind, ReceivedAt: sub.ReceivedAt, ReviewedAt: sub.ReviewedAt, Department: sub.Department, Result: sub.Result}
 	if m := sub.Message; m != nil {
 		ms := &MessageSummary{From: m.From.String(), ReplyTo: m.ReplyTo.String(), Subject: m.Subject, Language: m.Language,
 			Links: m.Links, Attachments: m.Attachments, AuthResults: m.AuthResults, PDF: m.PDF}
@@ -118,6 +121,7 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 		req.Lang = r.FormValue("lang")
 		req.NoLLM = r.FormValue("no_llm") == "true" || r.FormValue("no_llm") == "1"
 		req.SubmittedBy = r.FormValue("submitted_by")
+		req.Department = r.FormValue("department")
 		if ch := r.FormValue("channel"); ch != "" {
 			req.Channel = domain.Channel(ch)
 		}
@@ -150,7 +154,7 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "bad_request", "invalid JSON: "+err.Error())
 			return
 		}
-		req.Lang, req.NoLLM, req.SubmittedBy = body.Lang, body.NoLLM, body.SubmittedBy
+		req.Lang, req.NoLLM, req.SubmittedBy, req.Department = body.Lang, body.NoLLM, body.SubmittedBy, body.Department
 		if body.Channel != "" {
 			req.Channel = domain.Channel(body.Channel)
 		}
@@ -181,7 +185,7 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 	// polled through the same resource URL. The analyzer updates this row with
 	// the final result when it completes.
 	req.ID = ulid.Make().String()
-	pending := &domain.Submission{ID: req.ID, Channel: req.Channel, Kind: req.Kind, SubmittedBy: req.SubmittedBy, OrgID: req.OrgID, ReceivedAt: time.Now().UTC(), Status: domain.StatusProcessing}
+	pending := &domain.Submission{ID: req.ID, Channel: req.Channel, Kind: req.Kind, SubmittedBy: req.SubmittedBy, Department: req.Department, OrgID: req.OrgID, ReceivedAt: time.Now().UTC(), Status: domain.StatusProcessing}
 	if s.app.Store != nil {
 		if err := s.app.Store.SaveSubmission(r.Context(), pending, false); err != nil {
 			s.log.Error().Err(err).Msg("reserve analysis")

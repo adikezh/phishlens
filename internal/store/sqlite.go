@@ -170,11 +170,11 @@ func (s *SQLite) SaveSubmission(ctx context.Context, sub *domain.Submission, sto
 	}
 	now := ts(time.Now())
 	_, err = tx.ExecContext(ctx, s.sql(`INSERT INTO submissions
-		(id, org_id, channel, submitted_by, kind, received_at, status, reviewed_by, from_domain, subject, message_json, campaign_key, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(id) DO UPDATE SET status=excluded.status, reviewed_by=excluded.reviewed_by`),
-		sub.ID, sub.OrgID, string(sub.Channel), sub.SubmittedBy, string(sub.Kind), ts(sub.ReceivedAt),
-		string(sub.Status), sub.ReviewedBy, fromDomain, subject, message, campaignKey(sub), now)
+		(id, org_id, channel, submitted_by, department, kind, received_at, status, reviewed_by, reviewed_at, from_domain, subject, message_json, campaign_key, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET status=excluded.status, reviewed_by=excluded.reviewed_by, department=excluded.department`),
+		sub.ID, sub.OrgID, string(sub.Channel), sub.SubmittedBy, sub.Department, string(sub.Kind), ts(sub.ReceivedAt),
+		string(sub.Status), sub.ReviewedBy, nullableTS(sub.ReviewedAt), fromDomain, subject, message, campaignKey(sub), now)
 	if err != nil {
 		return fmt.Errorf("store: insert submission: %w", err)
 	}
@@ -219,6 +219,13 @@ func (s *SQLite) SaveSubmission(ctx context.Context, sub *domain.Submission, sto
 		}
 	}
 	return tx.Commit()
+}
+
+func nullableTS(t time.Time) any {
+	if t.IsZero() {
+		return nil
+	}
+	return ts(t)
 }
 
 func (s *SQLite) encodeMessage(m *domain.ParsedMail) (string, error) {
@@ -323,7 +330,7 @@ func (s *SQLite) ListIOCs(ctx context.Context, orgID string, since time.Time) ([
 	return out, rows.Err()
 }
 
-const selectSubmission = `SELECT s.id, s.org_id, s.channel, s.submitted_by, s.kind, s.received_at, s.status, s.reviewed_by,
+const selectSubmission = `SELECT s.id, s.org_id, s.channel, s.submitted_by, s.department, s.kind, s.received_at, s.status, s.reviewed_by, s.reviewed_at,
 	s.subject, s.message_json,
 	a.score, a.verdict, a.confidence, a.attack_type, a.brand_json, a.llm_json, a.recommendations_json, a.warnings_json, a.duration_ms
 	FROM submissions s LEFT JOIN analyses a ON a.submission_id = s.id`
@@ -335,17 +342,21 @@ func (s *SQLite) scanSubmission(ctx context.Context, row interface{ Scan(...any)
 		score, duration                      sql.NullInt64
 		verdict, attack, brand, llm, rec, wr sql.NullString
 		conf                                 sql.NullFloat64
-		channel, kind, status                string
+		channel, department, kind, status    string
+		reviewedAt                           sql.NullString
 	)
-	if err := row.Scan(&sub.ID, &sub.OrgID, &channel, &sub.SubmittedBy, &kind, &received, &status, &sub.ReviewedBy,
+	if err := row.Scan(&sub.ID, &sub.OrgID, &channel, &sub.SubmittedBy, &department, &kind, &received, &status, &sub.ReviewedBy, &reviewedAt,
 		&subject, &message, &score, &verdict, &conf, &attack, &brand, &llm, &rec, &wr, &duration); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
-	sub.Channel, sub.Kind, sub.Status = domain.Channel(channel), domain.Kind(kind), domain.Status(status)
+	sub.Channel, sub.Kind, sub.Status, sub.Department = domain.Channel(channel), domain.Kind(kind), domain.Status(status), department
 	sub.ReceivedAt = parseTS(received.String)
+	if reviewedAt.Valid {
+		sub.ReviewedAt = parseTS(reviewedAt.String)
+	}
 	if message.Valid {
 		if m, err := s.decodeMessage(message.String); err == nil {
 			sub.Message = m
@@ -448,7 +459,11 @@ func (s *SQLite) ListSubmissions(ctx context.Context, f SubmissionFilter) ([]*do
 
 // UpdateSubmissionStatus changes review status (F-4.6.2).
 func (s *SQLite) UpdateSubmissionStatus(ctx context.Context, id string, status domain.Status, reviewedBy string) error {
-	res, err := s.execContext(ctx, `UPDATE submissions SET status = ?, reviewed_by = ? WHERE id = ?`, string(status), reviewedBy, id)
+	var reviewedAt any
+	if status == domain.StatusConfirmedPhish || status == domain.StatusConfirmedClean || status == domain.StatusEscalated {
+		reviewedAt = ts(time.Now())
+	}
+	res, err := s.execContext(ctx, `UPDATE submissions SET status = ?, reviewed_by = ?, reviewed_at = ? WHERE id = ?`, string(status), reviewedBy, reviewedAt, id)
 	if err != nil {
 		return err
 	}
@@ -733,7 +748,7 @@ func (s *SQLite) DeleteWebhook(ctx context.Context, orgID, id string) error {
 
 // Stats aggregates counts since a point in time.
 func (s *SQLite) Stats(ctx context.Context, orgID string, since time.Time) (*Stats, error) {
-	st := &Stats{Since: since, ByVerdict: map[string]int{}, ByStatus: map[string]int{}, ByAttackType: map[string]int{}}
+	st := &Stats{Since: since, ByVerdict: map[string]int{}, ByStatus: map[string]int{}, ByAttackType: map[string]int{}, ByDepartment: map[string]int{}}
 	where := ` WHERE s.received_at >= ? AND (s.org_id = ? OR ? = '')`
 	args := []any{ts(since), orgID, orgID}
 	group := func(q string, into map[string]int) error {
@@ -761,12 +776,39 @@ func (s *SQLite) Stats(ctx context.Context, orgID string, since time.Time) (*Sta
 	if err := group(`SELECT a.attack_type, COUNT(*) FROM submissions s JOIN analyses a ON a.submission_id = s.id`+where+` GROUP BY a.attack_type`, st.ByAttackType); err != nil {
 		return nil, err
 	}
+	if err := group(`SELECT s.department, COUNT(*) FROM submissions s`+where+` AND s.department <> '' GROUP BY s.department`, st.ByDepartment); err != nil {
+		return nil, err
+	}
 	for _, n := range st.ByStatus {
 		st.Total += n
 	}
 	var avg sql.NullFloat64
 	if err := s.queryRowContext(ctx, `SELECT AVG(a.duration_ms) FROM submissions s JOIN analyses a ON a.submission_id = s.id`+where, args...).Scan(&avg); err == nil {
 		st.AvgDuration = int(avg.Float64)
+	}
+	rows, err := s.queryContext(ctx, `SELECT s.received_at, s.reviewed_at FROM submissions s`+where+` AND s.reviewed_at IS NOT NULL`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var totalReview time.Duration
+	var reviewCount int
+	for rows.Next() {
+		var received, reviewed string
+		if err := rows.Scan(&received, &reviewed); err != nil {
+			return nil, err
+		}
+		d := parseTS(reviewed).Sub(parseTS(received))
+		if d >= 0 {
+			totalReview += d
+			reviewCount++
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if reviewCount > 0 {
+		st.AvgReviewDuration = int((totalReview / time.Duration(reviewCount)) / time.Millisecond)
 	}
 	top := func(q string) ([]NameCount, error) {
 		rows, err := s.queryContext(ctx, q, args...)
@@ -789,7 +831,6 @@ func (s *SQLite) Stats(ctx context.Context, orgID string, since time.Time) (*Sta
 		}
 		return out, rows.Err()
 	}
-	var err error
 	if st.TopSignals, err = top(`SELECT g.signal_id, COUNT(*) c FROM signals g JOIN submissions s ON s.id = g.submission_id` + where + ` GROUP BY g.signal_id ORDER BY c DESC LIMIT 10`); err != nil {
 		return nil, err
 	}

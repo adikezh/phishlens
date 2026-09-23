@@ -77,14 +77,16 @@ type SubmissionFilter struct {
 
 // Stats is the /v1/stats payload (F-4.7.1, F-4.8.1).
 type Stats struct {
-	Since        time.Time      `json:"since"`
-	Total        int            `json:"total"`
-	ByVerdict    map[string]int `json:"by_verdict"`
-	ByStatus     map[string]int `json:"by_status"`
-	ByAttackType map[string]int `json:"by_attack_type"`
-	TopBrands    []NameCount    `json:"top_brands"`
-	TopSignals   []NameCount    `json:"top_signals"`
-	AvgDuration  int            `json:"avg_duration_ms"`
+	Since             time.Time      `json:"since"`
+	Total             int            `json:"total"`
+	ByVerdict         map[string]int `json:"by_verdict"`
+	ByStatus          map[string]int `json:"by_status"`
+	ByAttackType      map[string]int `json:"by_attack_type"`
+	ByDepartment      map[string]int `json:"by_department"`
+	TopBrands         []NameCount    `json:"top_brands"`
+	TopSignals        []NameCount    `json:"top_signals"`
+	AvgDuration       int            `json:"avg_duration_ms"`
+	AvgReviewDuration int            `json:"avg_review_duration_ms"`
 }
 
 // NameCount is a ranked pair.

@@ -57,6 +57,8 @@ func reportLines(s *store.Stats) []string {
 	lines = appendSortedCounts(lines, s.ByStatus)
 	lines = append(lines, "", "Attack types:")
 	lines = appendSortedCounts(lines, s.ByAttackType)
+	lines = append(lines, "", "Departments:")
+	lines = appendSortedCounts(lines, s.ByDepartment)
 	lines = append(lines, "", "Top brands:")
 	for _, nc := range s.TopBrands {
 		lines = append(lines, fmt.Sprintf("%s: %d", nc.Name, nc.Count))
@@ -67,7 +69,7 @@ func reportLines(s *store.Stats) []string {
 	}
 	lines = append(lines, "", "Top tactics:")
 	lines = appendSortedCounts(lines, tacticCounts(s.TopSignals))
-	lines = append(lines, "", fmt.Sprintf("Average analysis time: %d ms", s.AvgDuration))
+	lines = append(lines, "", fmt.Sprintf("Average analysis time: %d ms", s.AvgDuration), fmt.Sprintf("Average review time: %d ms", s.AvgReviewDuration))
 	return lines
 }
 
@@ -188,6 +190,10 @@ func markdown(s *store.Stats) string {
 	for k, v := range s.ByAttackType {
 		fmt.Fprintf(&b, "| %s | %d |\n", k, v)
 	}
+	b.WriteString("\n## Отделы\n\n| Отдел | Кол-во |\n|---|---|\n")
+	for k, v := range s.ByDepartment {
+		fmt.Fprintf(&b, "| %s | %d |\n", k, v)
+	}
 	b.WriteString("\n## Топ имитируемых брендов\n\n")
 	for _, nc := range s.TopBrands {
 		fmt.Fprintf(&b, "- %s — %d\n", nc.Name, nc.Count)
@@ -200,7 +206,7 @@ func markdown(s *store.Stats) string {
 	for name, count := range tacticCounts(s.TopSignals) {
 		fmt.Fprintf(&b, "- %s — %d\n", name, count)
 	}
-	fmt.Fprintf(&b, "\nСреднее время анализа: %d мс\n", s.AvgDuration)
+	fmt.Fprintf(&b, "\nСреднее время анализа: %d мс\nСреднее время реакции: %d мс\n", s.AvgDuration, s.AvgReviewDuration)
 	return b.String()
 }
 

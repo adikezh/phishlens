@@ -1,0 +1,1 @@
+-- SQLite does not support dropping columns portably; rollback is intentionally a no-op.
