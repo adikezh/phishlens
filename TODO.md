@@ -178,4 +178,6 @@ that require external accounts, providers, or deployment-specific decisions.
 Every release must record the exact commit, Go version, test commands and
 results, dependency/security scan output, container digest, configuration
 defaults, and the external gates that remain unverified. A green local test is
-not evidence for hosted-provider behavior or production readiness.
+not evidence for hosted-provider behavior or production readiness. The
+`v0.2.2` record is maintained in
+[`docs/releases/v0.2.2.md`](docs/releases/v0.2.2.md).
