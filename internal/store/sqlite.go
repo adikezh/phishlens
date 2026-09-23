@@ -561,7 +561,7 @@ func (s *SQLite) RemoveEntry(ctx context.Context, orgID string, kind ListKind, v
 
 // ListBrands returns custom brands for an org (F-4.3.4).
 func (s *SQLite) ListBrands(ctx context.Context, orgID string) ([]brands.Brand, error) {
-	rows, err := s.queryContext(ctx, `SELECT org_id, name, domains, esp_domains, keywords, locale FROM brands WHERE org_id = ? OR org_id = '' ORDER BY name`, orgID)
+	rows, err := s.queryContext(ctx, `SELECT org_id, name, domains, esp_domains, keywords, locale, colors, logo_phash FROM brands WHERE org_id = ? OR org_id = '' ORDER BY name`, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -569,13 +569,14 @@ func (s *SQLite) ListBrands(ctx context.Context, orgID string) ([]brands.Brand, 
 	var out []brands.Brand
 	for rows.Next() {
 		var b brands.Brand
-		var d, e, k string
-		if err := rows.Scan(&b.OrgID, &b.Name, &d, &e, &k, &b.Locale); err != nil {
+		var d, e, k, colors string
+		if err := rows.Scan(&b.OrgID, &b.Name, &d, &e, &k, &b.Locale, &colors, &b.LogoPHash); err != nil {
 			return nil, err
 		}
 		_ = json.Unmarshal([]byte(d), &b.Domains)
 		_ = json.Unmarshal([]byte(e), &b.ESPDomains)
 		_ = json.Unmarshal([]byte(k), &b.Keywords)
+		_ = json.Unmarshal([]byte(colors), &b.Colors)
 		out = append(out, b)
 	}
 	return out, rows.Err()
@@ -586,9 +587,10 @@ func (s *SQLite) AddBrand(ctx context.Context, b brands.Brand) error {
 	d, _ := json.Marshal(b.Domains)
 	e, _ := json.Marshal(b.ESPDomains)
 	k, _ := json.Marshal(b.Keywords)
-	_, err := s.execContext(ctx, `INSERT INTO brands (org_id, name, domains, esp_domains, keywords, locale, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(org_id, name) DO UPDATE SET domains=excluded.domains, esp_domains=excluded.esp_domains, keywords=excluded.keywords, locale=excluded.locale`,
-		b.OrgID, b.Name, string(d), string(e), string(k), b.Locale, ts(time.Now()))
+	colors, _ := json.Marshal(b.Colors)
+	_, err := s.execContext(ctx, `INSERT INTO brands (org_id, name, domains, esp_domains, keywords, locale, colors, logo_phash, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(org_id, name) DO UPDATE SET domains=excluded.domains, esp_domains=excluded.esp_domains, keywords=excluded.keywords, locale=excluded.locale, colors=excluded.colors, logo_phash=excluded.logo_phash`,
+		b.OrgID, b.Name, string(d), string(e), string(k), b.Locale, string(colors), b.LogoPHash, ts(time.Now()))
 	return err
 }
 

@@ -379,3 +379,5 @@ components:
         esp_domains: { type: array, items: { type: string } }
         keywords: { type: array, items: { type: string } }
         locale: { type: string }
+        colors: { type: array, items: { type: string, pattern: '^#[0-9A-Fa-f]{6}$' } }
+        logo_phash: { type: string, pattern: '^[0-9a-fA-F]{16}$' }
