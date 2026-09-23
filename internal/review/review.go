@@ -81,6 +81,44 @@ func (q *Queue) SetStatus(ctx context.Context, id string, status domain.Status, 
 	return q.st.Audit(ctx, store.AuditEntry{Actor: actor, Action: "submission.review", Target: id, Details: string(status)})
 }
 
+// BulkStatus applies one review decision to a bounded set of submissions.
+// Every item is reloaded and checked against the caller's organization before
+// it is changed, so IDs from another tenant cannot be used in a campaign
+// action. The operation is intentionally item-by-item because Store has no
+// cross-database transaction contract.
+func (q *Queue) BulkStatus(ctx context.Context, ids []string, status domain.Status, actor, orgID string) (int, error) {
+	if len(ids) == 0 || len(ids) > 100 {
+		return 0, errors.New("review: between 1 and 100 submission ids are required")
+	}
+	switch status {
+	case domain.StatusConfirmedPhish, domain.StatusConfirmedClean, domain.StatusEscalated, domain.StatusInReview:
+	default:
+		return 0, errors.New("review: invalid bulk status")
+	}
+	applied := 0
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			return applied, errors.New("review: submission id cannot be empty")
+		}
+		sub, err := q.st.GetSubmission(ctx, id)
+		if err != nil {
+			return applied, err
+		}
+		if orgID != "" && sub.OrgID != orgID {
+			return applied, store.ErrNotFound
+		}
+		if err := q.st.UpdateSubmissionStatus(ctx, id, status, actor); err != nil {
+			return applied, err
+		}
+		if err := q.st.Audit(ctx, store.AuditEntry{OrgID: sub.OrgID, Actor: actor, Action: "submission.bulk_review", Target: id, Details: string(status)}); err != nil {
+			return applied, err
+		}
+		applied++
+	}
+	return applied, nil
+}
+
 // BlockDomain adds a validated domain to the submission's organization blocklist
 // and records the action. External gateway delivery is handled by the configured
 // notifier fanout after the local decision is committed.

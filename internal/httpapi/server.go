@@ -67,6 +67,7 @@ func (s *Server) Routes(r chi.Router) {
 		v1.With(requireRole(RoleAnalyst, RoleAdmin)).Post("/submissions/{id}/reply", s.handleReplySubmission)
 		v1.With(requireRole(RoleAnalyst, RoleAdmin)).Delete("/submissions/{id}", s.handleDeleteSubmission)
 		v1.With(requireRole(RoleAnalyst, RoleAdmin)).Get("/campaigns", s.handleCampaigns)
+		v1.With(requireRole(RoleAnalyst, RoleAdmin)).Post("/campaigns/actions", s.handleCampaignAction)
 
 		v1.Get("/brands", s.handleListBrands)
 		v1.With(requireRole(RoleAdmin)).Post("/brands", s.handleAddBrand)

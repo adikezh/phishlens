@@ -440,6 +440,42 @@ func (s *Server) handleCampaigns(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, review.Campaigns(subs))
 }
 
+func (s *Server) handleCampaignAction(w http.ResponseWriter, r *http.Request) {
+	if s.app.Store == nil {
+		writeError(w, http.StatusNotFound, "not_found", "storage disabled")
+		return
+	}
+	var body struct {
+		IDs    []string `json:"ids"`
+		Action string   `json:"action"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "invalid JSON")
+		return
+	}
+	status := map[string]domain.Status{
+		"confirm_phish": domain.StatusConfirmedPhish,
+		"confirm_clean": domain.StatusConfirmedClean,
+		"escalate":      domain.StatusEscalated,
+		"in_review":     domain.StatusInReview,
+	}[strings.ToLower(strings.TrimSpace(body.Action))]
+	if status == "" {
+		writeError(w, http.StatusBadRequest, "bad_request", "action must be confirm_phish, confirm_clean, escalate, or in_review")
+		return
+	}
+	p := PrincipalFrom(r.Context())
+	applied, err := review.NewQueue(s.app.Store).BulkStatus(r.Context(), body.IDs, status, p.Name, p.OrgID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "submission not found")
+			return
+		}
+		writeError(w, http.StatusBadRequest, "bulk_action_failed", err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"action": body.Action, "status": string(status), "applied": applied})
+}
+
 func (s *Server) handleDeleteSubmission(w http.ResponseWriter, r *http.Request) {
 	if s.app.Store == nil {
 		writeError(w, http.StatusNotFound, "not_found", "storage disabled")

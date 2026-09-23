@@ -29,7 +29,8 @@ that require external accounts, providers, or deployment-specific decisions.
 - Business licensing now requires an Ed25519 signature, configured public key,
   valid edition/org claims, and an optional non-expired `expires_at` claim.
 - Analyst API actions now support campaign grouping, blocklisting a domain from
-  a submission, and local incident escalation with audit records.
+  a submission, local incident escalation with audit records, and bounded
+  organization-scoped bulk review actions.
 - `phishlens weights tune` now calibrates bounded signal weights from analyst
   JSONL labels and writes a reproducible YAML override file.
 - L-07 tracking pixels and missing unsubscribe instructions are detected from
@@ -54,6 +55,9 @@ that require external accounts, providers, or deployment-specific decisions.
   hashes, bearer authentication, organisation routing, verdict thresholding,
   bounded timeouts, and non-secret error handling. A live TheHive account is
   still required for external verification.
+- DFIR-IRIS v2 and Jira REST notifiers create privacy-safe cases/issues with
+  verdict thresholds; destination accounts and permissions remain external
+  verification gates.
 - OIDC login/callback/logout now verify provider discovery, authorization state,
   ID-token audience and nonce, and issue signed HttpOnly sessions with default-
   deny role mapping. A live IdP, group/tenant claim mapping, rotation and
