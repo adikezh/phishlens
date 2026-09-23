@@ -29,8 +29,8 @@ that require external accounts, providers, or deployment-specific decisions.
 - [ ] Add fuzz tests for EML, HTML, URL, and attachment listing paths.
 - [ ] Add a production deployment smoke test for Docker Compose and verify the
   image is non-root and read-only at runtime.
-- [ ] Decide whether `.msg` and PDF OCR belong in Community or are licensed
-  Business components; do not silently treat unsupported formats as analysed.
+- [ ] Decide whether PDF OCR belongs in Community or is a licensed Business
+  component; do not silently treat unsupported formats as analysed.
 
 ## Business / external gates (not locally provable)
 

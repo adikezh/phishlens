@@ -59,7 +59,7 @@ docs/signals/         документация каждого сигнала
 
 ## Что не входит в подтверждённый Community v1
 
-`.msg` (CFB/MAPI), PDF/OCR/vision без отдельного backend, собственная проверка
+PDF/OCR/vision без отдельного backend, собственная проверка
 SPF/DKIM/DMARC по DNS, RDAP/TI-источники, sandbox (chromedp), IMAP/Graph/Telegram,
 OIDC, Postgres и hosted add-in validation. Они явно возвращают ошибку или
 degraded warning и не маскируются под успешный анализ. См. [TODO.md](TODO.md).

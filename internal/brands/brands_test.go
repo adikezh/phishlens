@@ -19,13 +19,13 @@ func matcher(t *testing.T) *Matcher {
 	defer f.Close()
 	list, err := Load(f)
 	require.NoError(t, err)
-	require.GreaterOrEqual(t, len(list), 50)
+	require.GreaterOrEqual(t, len(list), 100)
 	rd, err := refdata.Load(data.FS, "")
 	require.NoError(t, err)
 	return NewMatcher(list, rd.Homoglyphs)
 }
 
-// D-04 table: lookalike vs official vs unrelated (ТЗ §10 wants ≥ 100 rows — extend here).
+// D-04 table: lookalike vs official vs unrelated.
 func TestMatchDomain(t *testing.T) {
 	m := matcher(t)
 	cases := []struct {

@@ -1,4 +1,4 @@
-# База брендов (ТЗ F-4.3.1). Стартовый набор; целевой объём ≥ 100 (TODO: дополнить).
+# База брендов (ТЗ F-4.3.1). Community-набор: 100+ брендов.
 # Бесплатные почтовые домены (gmail.com, outlook.com, icloud.com) НЕ входят в domains бренда:
 # письмо с gmail.com — не «официальное письмо Google» (см. data/free_mail_domains.txt, D-05).
 # name        — отображаемое имя
@@ -251,4 +251,198 @@ brands:
   - name: Steam
     domains: [steampowered.com, steamcommunity.com]
     keywords: [steam]
+    locale: global
+
+  # ---------- Дополнительные локальные и глобальные бренды ----------
+  - name: Alatau City Bank
+    domains: [alataucitybank.kz]
+    keywords: [alatau city bank, алатау city bank]
+    locale: kz
+  - name: Shinhan Bank Kazakhstan
+    domains: [shinhan.kz]
+    keywords: [shinhan, шинхан банк]
+    locale: kz
+  - name: Halyk Life
+    domains: [halyklife.kz]
+    keywords: [halyk life, халык life]
+    locale: kz
+  - name: Qazaq Air
+    domains: [qazaqair.com]
+    keywords: [qazaq air, казак эйр]
+    locale: kz
+  - name: Technodom
+    domains: [technodom.kz]
+    keywords: [technodom, технодом]
+    locale: kz
+  - name: Sulpak
+    domains: [sulpak.kz]
+    keywords: [sulpak, сулпак]
+    locale: kz
+  - name: Mechta
+    domains: [mechta.kz]
+    keywords: [mechta, мечта]
+    locale: kz
+  - name: Arbuz.kz
+    domains: [arbuz.kz]
+    keywords: [arbuz, арбуз.kz]
+    locale: kz
+  - name: Chocofood
+    domains: [chocofood.kz]
+    keywords: [chocofood, чокофуд]
+    locale: kz
+  - name: Ticketon
+    domains: [ticketon.kz]
+    keywords: [ticketon, тикетон]
+    locale: kz
+  - name: Astana Hub
+    domains: [astanahub.com]
+    keywords: [astana hub, астана хаб]
+    locale: kz
+  - name: Kazatomprom
+    domains: [kazatomprom.kz]
+    keywords: [kazatomprom, казатомпром]
+    locale: kz
+  - name: KEGOC
+    domains: [kegoc.kz]
+    keywords: [kegoc, кегок]
+    locale: kz
+  - name: Air Astana Cargo
+    domains: [airastana.com]
+    keywords: [air astana cargo]
+    locale: kz
+  - name: Sber
+    domains: [sber.ru, sberbank.ru]
+    keywords: [sber, сбер, сбербанк]
+    locale: ru
+  - name: T-Bank
+    domains: [tbank.ru, tinkoff.ru]
+    keywords: [t-bank, тинькофф, tinkoff]
+    locale: ru
+  - name: VTB
+    domains: [vtb.ru]
+    keywords: [vtb, втб]
+    locale: ru
+  - name: Alfa-Bank
+    domains: [alfabank.ru]
+    keywords: [alfa-bank, альфа-банк]
+    locale: ru
+  - name: MTS
+    domains: [mts.ru]
+    keywords: [mts, мтс]
+    locale: ru
+  - name: MegaFon
+    domains: [megafon.ru]
+    keywords: [megafon, мегафон]
+    locale: ru
+  - name: Beeline Russia
+    domains: [beeline.ru]
+    keywords: [beeline, билайн]
+    locale: ru
+  - name: VK
+    domains: [vk.com, vk.ru]
+    keywords: [vk, вконтакте, вк]
+    locale: ru
+  - name: Avito
+    domains: [avito.ru]
+    keywords: [avito, авито]
+    locale: ru
+  - name: Russian Post
+    domains: [pochta.ru]
+    keywords: [почта россии, russian post, pochta.ru]
+    locale: ru
+  - name: Dodo Pizza
+    domains: [dodopizza.ru, dodopizza.com]
+    keywords: [dodo pizza, додо пицца]
+    locale: ru
+  - name: GitHub
+    domains: [github.com, githubusercontent.com]
+    keywords: [github]
+    locale: global
+  - name: GitLab
+    domains: [gitlab.com]
+    keywords: [gitlab]
+    locale: global
+  - name: Slack
+    domains: [slack.com]
+    keywords: [slack]
+    locale: global
+  - name: Atlassian
+    domains: [atlassian.com, jira.com, bitbucket.org]
+    keywords: [atlassian, jira, bitbucket]
+    locale: global
+  - name: Salesforce
+    domains: [salesforce.com]
+    keywords: [salesforce]
+    locale: global
+  - name: Oracle
+    domains: [oracle.com]
+    keywords: [oracle]
+    locale: global
+  - name: SAP
+    domains: [sap.com]
+    keywords: [sap]
+    locale: global
+  - name: IBM
+    domains: [ibm.com]
+    keywords: [ibm]
+    locale: global
+  - name: Cisco
+    domains: [cisco.com]
+    keywords: [cisco]
+    locale: global
+  - name: Cloudflare
+    domains: [cloudflare.com]
+    keywords: [cloudflare]
+    locale: global
+  - name: Okta
+    domains: [okta.com]
+    keywords: [okta]
+    locale: global
+  - name: Fortinet
+    domains: [fortinet.com]
+    keywords: [fortinet]
+    locale: global
+  - name: CrowdStrike
+    domains: [crowdstrike.com]
+    keywords: [crowdstrike]
+    locale: global
+  - name: Proofpoint
+    domains: [proofpoint.com]
+    keywords: [proofpoint]
+    locale: global
+  - name: Mailchimp
+    domains: [mailchimp.com]
+    keywords: [mailchimp]
+    locale: global
+  - name: Stripe
+    domains: [stripe.com]
+    keywords: [stripe]
+    locale: global
+  - name: Revolut
+    domains: [revolut.com]
+    keywords: [revolut]
+    locale: global
+  - name: Payoneer
+    domains: [payoneer.com]
+    keywords: [payoneer]
+    locale: global
+  - name: Western Union
+    domains: [westernunion.com]
+    keywords: [western union]
+    locale: global
+  - name: Booking.com
+    domains: [booking.com]
+    keywords: [booking, booking.com]
+    locale: global
+  - name: Airbnb
+    domains: [airbnb.com]
+    keywords: [airbnb]
+    locale: global
+  - name: Uber
+    domains: [uber.com]
+    keywords: [uber]
+    locale: global
+  - name: Bolt
+    domains: [bolt.eu]
+    keywords: [bolt]
     locale: global
