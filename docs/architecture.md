@@ -39,6 +39,10 @@ authorization state, nonce and audience verification, signed HttpOnly sessions,
 and default-deny group-to-role mapping. A live identity provider and
 deployment-specific claim mapping remain external evidence gates.
 
+The Telegram receiver uses `getUpdates`, `getFile`, and `sendMessage` with
+bounded HTTP calls; `/start <org-code>` creates an in-memory organization
+binding and message/photo content is passed to `app.Analyzer`.
+
 Long-running REST analyses reserve their submission ID first; the handler waits
 up to ten seconds, then returns `202` with a polling `Location` while the
 analyzer updates that same stored resource.

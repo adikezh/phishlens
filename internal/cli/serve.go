@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/phishlens/phishlens/internal/app"
+	"github.com/phishlens/phishlens/internal/domain"
 	"github.com/phishlens/phishlens/internal/httpapi"
 	"github.com/phishlens/phishlens/internal/ingest"
 	"github.com/phishlens/phishlens/internal/ingest/graph"
@@ -36,11 +37,14 @@ func newServeCmd() *cobra.Command {
 				return err
 			}
 			handler := api.Handler(func(r chi.Router) { ui.Routes(r) })
+			analyze := func(ctx context.Context, req app.Request) (*domain.Submission, error) {
+				return a.Analyzer.Analyze(ctx, req)
+			}
 
 			ingest.NewManager(a.Log,
 				imap.New(a.Cfg.Ingest.IMAP),
 				graph.New(a.Cfg.Ingest.Graph),
-				telegram.New(a.Cfg.Ingest.Telegram),
+				telegram.New(a.Cfg.Ingest.Telegram, analyze),
 			).Start(ctx)
 			go retentionLoop(ctx, a)
 

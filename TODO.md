@@ -61,6 +61,10 @@ that require external accounts, providers, or deployment-specific decisions.
 - REST analysis now reserves an ID, returns the completed result within the
   10-second synchronous budget, or returns `202 Accepted` with `Location` and
   `Retry-After` while the same persisted resource is processed.
+- Telegram receiver now implements bounded Bot API long polling, `/start
+  <org-code>` binding, text/photo intake, a 10 MiB photo limit, and verdict
+  replies through the shared analyzer. A live bot token and organization
+  binding procedure remain external verification gates.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
@@ -91,7 +95,8 @@ that require external accounts, providers, or deployment-specific decisions.
 
 ## Business / external gates (not locally provable)
 
-- IMAP, Microsoft Graph, Telegram, Outlook/Gmail add-in host validation.
+- IMAP, Microsoft Graph, Outlook/Gmail add-in host validation, and live
+  Telegram bot/token verification.
 - Configure and verify a real URLhaus Auth-Key; without it the provider is explicitly degraded to unknown.
 - Live Safe Browsing/AbuseIPDB/VirusTotal accounts and rate limits.
 - Live OIDC IdP/group/tenant verification, multi-tenant production isolation,
