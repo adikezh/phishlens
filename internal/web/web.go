@@ -1,6 +1,6 @@
-// Package web serves the operator UI (F-4.7.2). Skeleton: html/template + htmx +
-// Tailwind CDN. TODO: migrate to templ components, vendor htmx/tailwind for
-// offline installs, add queue / campaigns / brands / lists / settings / dashboard pages.
+// Package web serves the operator UI (F-4.7.2): html/template + htmx +
+// Tailwind CDN. The analysis page and operator pages are deliberately server
+// rendered shells; data actions use the authenticated REST API from the browser.
 package web
 
 import (
@@ -72,6 +72,10 @@ func New(a *app.App) (*UI, error) {
 func (u *UI) Routes(r chi.Router) {
 	r.Get("/", u.handleIndex)
 	r.Post("/ui/analyze", u.handleAnalyze)
+	r.Get("/ui/queue", u.handleQueue)
+	r.Get("/ui/campaigns", u.handleCampaigns)
+	r.Get("/ui/dashboard", u.handleDashboard)
+	r.Get("/ui/brands", u.handleBrands)
 	sub, _ := fs.Sub(addins.FS, ".")
 	r.Handle("/addins/*", http.StripPrefix("/addins/", http.FileServer(http.FS(sub))))
 }
@@ -80,6 +84,8 @@ type pageData struct {
 	Version string
 	Edition string
 	Lang    string
+	Title   string
+	Mode    string
 	Demos   []app.Demo
 	Signals int
 	Brands  int
@@ -94,8 +100,33 @@ func (u *UI) handleIndex(w http.ResponseWriter, r *http.Request) {
 		Signals: u.app.Registry.Len(),
 		Brands:  len(u.app.Brands.Brands()),
 		LLM:     u.app.LLM != nil,
+		Title:   "Проверка письма",
 	}
 	u.render(w, "index.html", d)
+}
+
+func (u *UI) operatorPage(w http.ResponseWriter, mode, title string) {
+	u.render(w, "operator.html", pageData{
+		Version: buildinfo.Version, Edition: buildinfo.Edition,
+		Lang: i18n.Normalize(u.app.Cfg.Analysis.Language), Title: title, Mode: mode,
+		Signals: u.app.Registry.Len(), Brands: len(u.app.Brands.Brands()),
+	})
+}
+
+func (u *UI) handleQueue(w http.ResponseWriter, _ *http.Request) {
+	u.operatorPage(w, "queue", "Очередь ИБ")
+}
+
+func (u *UI) handleCampaigns(w http.ResponseWriter, _ *http.Request) {
+	u.operatorPage(w, "campaigns", "Кампании")
+}
+
+func (u *UI) handleDashboard(w http.ResponseWriter, _ *http.Request) {
+	u.operatorPage(w, "dashboard", "Дашборд")
+}
+
+func (u *UI) handleBrands(w http.ResponseWriter, _ *http.Request) {
+	u.operatorPage(w, "brands", "Бренды")
 }
 
 type resultData struct {

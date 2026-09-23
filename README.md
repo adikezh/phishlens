@@ -43,7 +43,7 @@ internal/llm          провайдеры (openai_compatible, anthropic, ollama
 internal/score        веса, пороги, жёсткие правила, вердикт
 internal/store        SQLite (modernc) / PostgreSQL (pgx), миграции
 internal/httpapi      REST /v1/* (chi), /health, /metrics
-internal/web          UI (html/template + htmx; миграция на templ — TODO)
+internal/web          UI анализа + очередь/кампании/дашборд/бренды (html/template + htmx)
 internal/notify       webhook (HMAC), Wazuh, TheHive (заглушки)
 internal/ingest       IMAP / Graph / Telegram приёмники (заглушки)
 data/                 brands.yaml, weights.yaml, словари, демо-письма
@@ -53,7 +53,8 @@ docs/signals/         документация каждого сигнала
 ## Что работает локально
 
 - `analyze --text/--file` — парсинг `.eml`/текста, 38 проверок, ru/en/kz объяснения, скоринг, вердикт, JSON-вывод.
-- `serve` — `POST /v1/analyze`, `GET /v1/analyses/{id}`, списки, бренды, `/health`, `/metrics`, UI на `/`.
+- `serve` — `POST /v1/analyze`, `GET /v1/analyses/{id}`, очередь и review actions,
+  списки, бренды, `/health`, `/metrics`, UI на `/` и `/ui/{queue,campaigns,dashboard,brands}`.
 - `batch` / `eval` — прогон корпуса и precision/recall/F1 по золотым вердиктам (`--min-f1` для CI; три демо — macro-F1 = 1.0, это не production benchmark).
 - `migrate up`, `apikey create`, `lists allow|block add|list`.
 

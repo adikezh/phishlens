@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PhishLens — {{.Title}}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f6f7f2] text-slate-900">
+<header class="border-b border-slate-200 bg-[#10222b] text-slate-100">
+  <div class="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-4 py-4">
+    <a href="/" class="flex items-center gap-3" aria-label="PhishLens, анализ">
+      <span class="grid h-9 w-9 place-items-center rounded bg-amber-400 text-lg text-[#10222b]">⌁</span>
+      <span><span class="block text-lg font-semibold tracking-tight">PhishLens</span><span class="block text-xs text-slate-400">операторский контур</span></span>
+    </a>
+    <nav class="flex flex-wrap justify-end gap-x-4 gap-y-1 text-sm text-slate-300" aria-label="Основная навигация">
+      <a class="hover:text-white" href="/">Анализ</a>
+      <a class="hover:text-white" href="/ui/queue">Очередь ИБ</a>
+      <a class="hover:text-white" href="/ui/campaigns">Кампании</a>
+      <a class="hover:text-white" href="/ui/dashboard">Дашборд</a>
+      <a class="hover:text-white" href="/ui/brands">Бренды</a>
+    </nav>
+  </div>
+</header>
+
+<main id="operator-root" data-mode="{{.Mode}}" class="mx-auto max-w-[1440px] px-4 py-8">
+  <div class="mb-7 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="mb-2 text-xs font-semibold tracking-[0.18em] text-amber-700">PHISHLENS / CONTROL ROOM</p>
+      <h1 class="text-3xl font-semibold tracking-tight text-[#10222b]">{{.Title}}</h1>
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Решения аналитика применяются к сохранённым метаданным и аудируются. Текст письма в Community-режиме не хранится.</p>
+    </div>
+    <div class="text-right text-xs text-slate-500">{{.Edition}} · {{.Version}}<br><a class="underline" href="/health">состояние сервиса</a></div>
+  </div>
+
+  {{if ne .Mode "brands"}}
+  <section class="mb-6 flex flex-wrap items-end gap-3 border-l-4 border-amber-400 bg-white px-4 py-4 shadow-sm">
+    <label class="min-w-[280px] flex-1 text-sm font-medium" for="api-key">API-ключ аналитика/admin
+      <input id="api-key" type="password" autocomplete="off" placeholder="pl_…" class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 font-mono text-sm">
+    </label>
+    <button id="save-key" class="rounded bg-[#10222b] px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Сохранить ключ</button>
+    <span class="max-w-md text-xs leading-5 text-slate-500">Ключ остаётся в localStorage этого браузера и отправляется только вашему PhishLens API.</span>
+  </section>
+  {{end}}
+
+  {{if eq .Mode "queue"}}
+  <section class="border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-wrap items-end gap-3 border-b border-slate-200 p-4">
+      <label class="text-sm">Статус<select id="status-filter" class="mt-1 block rounded border border-slate-300 px-2 py-2"><option value="">все</option><option value="in_review">в очереди</option><option value="analyzed">анализ</option><option value="confirmed_phish">подтверждён фишинг</option><option value="confirmed_clean">подтверждено чистым</option><option value="escalated">эскалация</option></select></label>
+      <label class="text-sm">Вердикт<select id="verdict-filter" class="mt-1 block rounded border border-slate-300 px-2 py-2"><option value="">все</option><option value="phishing">фишинг</option><option value="suspicious">подозрительное</option><option value="needs_review">нужна проверка</option><option value="clean">чистое</option></select></label>
+      <button id="load-queue" class="rounded bg-amber-400 px-4 py-2 text-sm font-semibold text-[#10222b] hover:bg-amber-300">Загрузить очередь</button>
+    </div>
+    <div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-4 py-3">Обращение</th><th class="px-4 py-3">Вердикт</th><th class="px-4 py-3">Статус</th><th class="px-4 py-3">Источник</th><th class="px-4 py-3">Действия</th></tr></thead><tbody id="queue-body" class="divide-y divide-slate-100"></tbody></table></div>
+  </section>
+  {{end}}
+
+  {{if eq .Mode "campaigns"}}
+  <section><div id="campaign-grid" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div></section>
+  {{end}}
+
+  {{if eq .Mode "dashboard"}}
+  <section><div id="stats-grid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"></div><div class="mt-6 grid gap-6 lg:grid-cols-2"><section class="border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-semibold">Вердикты</h2><div id="verdict-stats" class="mt-4 space-y-2"></div></section><section class="border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-semibold">Сигналы</h2><div id="signal-stats" class="mt-4 space-y-2"></div></section></div></section>
+  {{end}}
+
+  {{if eq .Mode "brands"}}
+  <section class="border border-slate-200 bg-white p-5 shadow-sm"><div class="mb-4 flex items-center justify-between"><h2 class="font-semibold">Справочник брендов</h2><span id="brand-count" class="text-sm text-slate-500"></span></div><div id="brand-grid" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div></section>
+  {{end}}
+
+  <p id="operator-state" class="mt-5 rounded border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600" role="status">Загрузка состояния интерфейса…</p>
+</main>
+
+<script>
+(() => {
+  const root = document.getElementById('operator-root');
+  const mode = root.dataset.mode;
+  const state = document.getElementById('operator-state');
+  const keyInput = document.getElementById('api-key');
+  const savedKey = 'phishlens.api-key';
+  if (keyInput) keyInput.value = localStorage.getItem(savedKey) || '';
+  const setState = (message, error = false) => { state.textContent = message; state.className = 'mt-5 rounded border px-4 py-3 text-sm ' + (error ? 'border-red-200 bg-red-50 text-red-800' : 'border-slate-200 bg-white text-slate-600'); };
+  const apiKey = () => (keyInput ? keyInput.value.trim() : '');
+  async function api(path, options = {}) {
+    const headers = Object.assign({'Accept': 'application/json'}, options.headers || {});
+    if (apiKey()) headers['X-API-Key'] = apiKey();
+    const response = await fetch(path, Object.assign({}, options, {headers}));
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || ('HTTP ' + response.status));
+    return data;
+  }
+  function textCell(value, className = 'px-4 py-3') { const cell = document.createElement('td'); cell.className = className; cell.textContent = value == null || value === '' ? '—' : String(value); return cell; }
+  function button(label, fn, tone = 'border-slate-300 text-slate-700') { const b = document.createElement('button'); b.type = 'button'; b.className = 'mr-1 mb-1 rounded border px-2 py-1 text-xs hover:bg-slate-50 ' + tone; b.textContent = label; b.addEventListener('click', fn); return b; }
+  async function loadQueue() {
+    if (!apiKey()) { setState('Введите API-ключ с ролью analyst или admin.', true); return; }
+    setState('Загружаю очередь…');
+    try {
+      const q = new URLSearchParams({limit: '100'}); const status = document.getElementById('status-filter').value; const verdict = document.getElementById('verdict-filter').value;
+      if (status) q.set('status', status); if (verdict) q.set('verdict', verdict);
+      const rows = await api('/v1/submissions?' + q); const body = document.getElementById('queue-body'); body.replaceChildren();
+      rows.forEach(item => { const tr = document.createElement('tr'); const message = item.message || {}; const result = item.result || {}; tr.append(textCell((message.subject || 'без сохранённой темы') + '\n' + item.id), textCell((result.verdict || '—') + ' · ' + (result.score == null ? '—' : result.score + '/100')), textCell(item.status), textCell(item.channel)); const actions = document.createElement('td'); actions.className = 'px-4 py-3'; actions.append(button('Подтвердить фишинг', () => review(item.id, 'confirmed_phish'), 'border-red-300 text-red-700'), button('Чистое', () => review(item.id, 'confirmed_clean'), 'border-emerald-300 text-emerald-700'), button('Эскалировать', () => review(item.id, 'escalated'), 'border-violet-300 text-violet-700'), button('Заблокировать домен', () => mutate(item.id, '/block-domain', 'POST'), 'border-amber-300 text-amber-800')); tr.append(actions); body.append(tr); });
+      setState(rows.length ? ('Показано обращений: ' + rows.length) : 'Очередь пуста — новые обращения появятся после «Сообщить в ИБ».');
+    } catch (err) { setState(err.message, true); }
+  }
+  async function review(id, status) { try { await api('/v1/submissions/' + encodeURIComponent(id), {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status})}); await loadQueue(); } catch (err) { setState(err.message, true); } }
+  async function mutate(id, suffix, method) { try { await api('/v1/submissions/' + encodeURIComponent(id) + suffix, {method}); await loadQueue(); } catch (err) { setState(err.message, true); } }
+  async function loadCampaigns() { if (!apiKey()) { setState('Введите API-ключ с ролью analyst или admin.', true); return; } setState('Загружаю кампании…'); try { const data = await api('/v1/campaigns?limit=100'); const grid = document.getElementById('campaign-grid'); grid.replaceChildren(); data.forEach(c => { const card = document.createElement('article'); card.className = 'border border-slate-200 bg-white p-5 shadow-sm'; const title = document.createElement('h2'); title.className = 'font-semibold'; title.textContent = c.key || 'Без ключа кампании'; const meta = document.createElement('p'); meta.className = 'mt-2 text-sm text-slate-500'; meta.textContent = 'Обращений: ' + c.count; const verdicts = document.createElement('p'); verdicts.className = 'mt-3 text-xs text-slate-600'; verdicts.textContent = Object.entries(c.verdicts || {}).map(([k, v]) => k + ': ' + v).join(' · ') || 'Вердиктов нет'; card.append(title, meta, verdicts); grid.append(card); }); setState(data.length ? ('Кампаний: ' + data.length) : 'Кампаний пока нет.'); } catch (err) { setState(err.message, true); } }
+  function statCard(label, value) { const card = document.createElement('article'); card.className = 'border border-slate-200 bg-white p-5 shadow-sm'; const small = document.createElement('p'); small.className = 'text-xs font-semibold tracking-wide text-slate-500'; small.textContent = label; const big = document.createElement('p'); big.className = 'mt-2 text-3xl font-semibold text-[#10222b]'; big.textContent = value; card.append(small, big); return card; }
+  async function loadDashboard() { if (!apiKey()) { setState('Введите API-ключ с ролью analyst или admin.', true); return; } setState('Загружаю статистику…'); try { const data = await api('/v1/stats?since=30d'); const grid = document.getElementById('stats-grid'); grid.replaceChildren(statCard('Всего обращений', data.total), statCard('Среднее время', (data.avg_duration_ms || 0) + ' мс'), statCard('Фишинг', (data.by_verdict || {}).phishing || 0), statCard('В очереди', (data.by_status || {}).in_review || 0)); const verdicts = document.getElementById('verdict-stats'); verdicts.replaceChildren(); Object.entries(data.by_verdict || {}).forEach(([k, v]) => verdicts.append(statCard(k, v))); const signals = document.getElementById('signal-stats'); signals.replaceChildren(); (data.top_signals || []).forEach(s => { const p = document.createElement('p'); p.className = 'flex justify-between border-b border-slate-100 py-2 text-sm'; p.textContent = s.name; const n = document.createElement('strong'); n.textContent = s.count; p.append(n); signals.append(p); }); setState('Период: последние 30 дней.'); } catch (err) { setState(err.message, true); } }
+  async function loadBrands() { setState('Загружаю справочник…'); try { const data = await api('/v1/brands'); const grid = document.getElementById('brand-grid'); grid.replaceChildren(); document.getElementById('brand-count').textContent = data.length + ' записей'; data.forEach(brand => { const card = document.createElement('article'); card.className = 'border border-slate-200 bg-slate-50 p-4'; const name = document.createElement('h2'); name.className = 'font-semibold'; name.textContent = brand.name; const domains = document.createElement('p'); domains.className = 'mt-2 text-xs leading-5 text-slate-600'; domains.textContent = (brand.domains || []).join(', ') || 'домены не указаны'; card.append(name, domains); grid.append(card); }); setState('Справочник загружен.'); } catch (err) { setState(err.message, true); } }
+  if (document.getElementById('save-key')) document.getElementById('save-key').addEventListener('click', () => { localStorage.setItem(savedKey, apiKey()); setState('Ключ сохранён в этом браузере.'); if (mode === 'queue') loadQueue(); if (mode === 'campaigns') loadCampaigns(); if (mode === 'dashboard') loadDashboard(); });
+  if (document.getElementById('load-queue')) document.getElementById('load-queue').addEventListener('click', loadQueue);
+  if (mode === 'queue') loadQueue(); else if (mode === 'campaigns') loadCampaigns(); else if (mode === 'dashboard') loadDashboard(); else if (mode === 'brands') loadBrands();
+})();
+</script>
+</body>
+</html>
