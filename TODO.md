@@ -48,6 +48,8 @@ that require external accounts, providers, or deployment-specific decisions.
   implemented.
 - A-03 detects VBA directory markers in legacy OLE Office attachments without
   opening or executing macro streams.
+- C-04 compares detected message language with the configured brand locale;
+  unknown language and machine-translation claims remain out of scope.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.

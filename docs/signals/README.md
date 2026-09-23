@@ -45,6 +45,7 @@
 | content.urgency / threat | C-01 | 10/10 | ✅ ru/en/kz |
 | content.credential_request | C-02 | 20 | ✅ |
 | content.generic_greeting | C-03 | 8 | ✅ |
+| content.language_mismatch | C-04 | 12 | ✅ detected message language vs configured brand locale |
 | content.bec_pattern | C-05 | 40 | ✅ |
 | content.finance_request | C-06 | 10 | ✅ keywords + KZ IIN/BIN mod-11 check |
 | content.hidden_text | C-07 | 15 | ✅ |
@@ -57,4 +58,4 @@
 | attachment.pdf_active | A-04 | 25 | ✅ bounded static scan; no rendering or action execution |
 | semantic.llm_phishing / suspicious / clean | F-4.4.3 | 25/10/−15 | ✅ |
 
-Не начаты: C-04, L-05, A-05.
+Не начаты: L-05, A-05.

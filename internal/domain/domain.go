@@ -313,6 +313,7 @@ func (s Signal) Contribution() float64 { return float64(s.Weight) * s.Confidence
 // BrandMatch is the brand the message imitates or legitimately belongs to.
 type BrandMatch struct {
 	Name     string  `json:"name"`
+	Locale   string  `json:"locale,omitempty"`
 	Method   string  `json:"method"` // domain | domain_similarity | link_similarity | keyword | logo
 	Score    float64 `json:"score"`
 	Official bool    `json:"official"` // sender is on the brand's official/ESP domains

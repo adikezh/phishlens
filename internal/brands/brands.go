@@ -258,15 +258,23 @@ func (m *Matcher) Match(mail *domain.ParsedMail) *domain.BrandMatch {
 		return nil
 	}
 	if name, official, method, score := m.MatchDomain(mail.From.Domain); name != "" {
-		return &domain.BrandMatch{Name: name, Method: method, Score: score, Official: official}
+		return &domain.BrandMatch{Name: name, Locale: m.locale(name), Method: method, Score: score, Official: official}
 	}
 	for _, host := range mail.LinkDomains() {
 		if name, official, method, score := m.MatchDomain(host); name != "" && !official {
-			return &domain.BrandMatch{Name: name, Method: "link_" + method, Score: score, Official: m.IsOfficial(name, mail.From.Domain)}
+			return &domain.BrandMatch{Name: name, Locale: m.locale(name), Method: "link_" + method, Score: score, Official: m.IsOfficial(name, mail.From.Domain)}
 		}
 	}
 	if name, score := m.MatchText(mail.Subject, mail.Text()); name != "" {
-		return &domain.BrandMatch{Name: name, Method: "keyword", Score: score, Official: m.IsOfficial(name, mail.From.Domain)}
+		return &domain.BrandMatch{Name: name, Locale: m.locale(name), Method: "keyword", Score: score, Official: m.IsOfficial(name, mail.From.Domain)}
 	}
 	return nil
+}
+
+func (m *Matcher) locale(name string) string {
+	b, ok := m.Get(name)
+	if !ok {
+		return ""
+	}
+	return strings.ToLower(strings.TrimSpace(strings.SplitN(b.Locale, "-", 2)[0]))
 }

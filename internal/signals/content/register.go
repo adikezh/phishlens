@@ -1,6 +1,5 @@
 // Package content implements body heuristics C-01 … C-08 (ТЗ §4.2) over the
 // ru/en/kz dictionaries in data/keywords.
-// TODO(C-04): language mismatch vs brand locale / machine translation (heuristics + LLM).
 package content
 
 import (
@@ -16,6 +15,7 @@ const (
 	IDThreat            = "content.threat"             // C-01
 	IDCredentialRequest = "content.credential_request" // C-02
 	IDGenericGreeting   = "content.generic_greeting"   // C-03
+	IDLanguageMismatch  = "content.language_mismatch"  // C-04
 	IDBECPattern        = "content.bec_pattern"        // C-05
 	IDFinanceRequest    = "content.finance_request"    // C-06
 	IDHiddenText        = "content.hidden_text"        // C-07
@@ -28,6 +28,7 @@ func Register(r *signals.Registry) {
 		signals.NewFunc(IDUrgency, domain.CategoryContent, urgencyThreat),
 		signals.NewFunc(IDCredentialRequest, domain.CategoryContent, credentialRequest),
 		signals.NewFunc(IDGenericGreeting, domain.CategoryContent, genericGreeting),
+		signals.NewFunc(IDLanguageMismatch, domain.CategoryContent, languageMismatch),
 		signals.NewFunc(IDBECPattern, domain.CategoryContent, becPattern),
 		signals.NewFunc(IDFinanceRequest, domain.CategoryContent, financeRequest),
 		signals.NewFunc(IDHiddenText, domain.CategoryContent, hiddenText),
