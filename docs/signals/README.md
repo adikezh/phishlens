@@ -46,7 +46,7 @@
 | content.credential_request | C-02 | 20 | ✅ |
 | content.generic_greeting | C-03 | 8 | ✅ |
 | content.bec_pattern | C-05 | 40 | ✅ |
-| content.finance_request | C-06 | 10 | ✅ (ИИН/БИН чек — TODO) |
+| content.finance_request | C-06 | 10 | ✅ keywords + KZ IIN/BIN mod-11 check |
 | content.hidden_text | C-07 | 15 | ✅ |
 | content.image_only | C-08 | 10 | ✅ |
 | brand.sender_mismatch | F-4.3.3 | 35 | ✅ |

@@ -40,6 +40,8 @@ that require external accounts, providers, or deployment-specific decisions.
   local-address rejection; expansion is disabled in offline mode.
 - H-05 Received IPs can be checked through the existing TI reputation contract;
   H-07 detects known bulk-mailer headers on single-recipient messages.
+- C-06 recognizes valid 12-digit Kazakhstan IIN/BIN checksums as additional
+  finance-request evidence.
 - Community storage defaults to metadata/signals only; message bodies require
   explicit `storage.store_bodies=true` and an encryption key for encrypted
   storage.
