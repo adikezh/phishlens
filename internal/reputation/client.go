@@ -2,8 +2,6 @@
 // RDAP are available; URLhaus requires its configured Auth-Key. AbuseIPDB, Safe
 // Browsing and VirusTotal remain optional integrations. Provider failures degrade
 // to "unknown" and never create a positive signal.
-//
-// TODO(§5): sony/gobreaker per external service; persist cache in reputation_cache table.
 package reputation
 
 import (
@@ -36,6 +34,8 @@ type Client struct {
 	safeBrowsingURL string
 	abuseIPDBURL    string
 	virusTotalURL   string
+	breakers        map[string]*circuitBreaker
+	breakerMu       sync.Mutex
 }
 
 // New builds a client; dnsResolver is "host:port" or "" for the system resolver.
@@ -50,6 +50,7 @@ func New(cfg config.Reputation, dnsResolver string, log zerolog.Logger) *Client 
 		safeBrowsingURL: "https://safebrowsing.googleapis.com/v4/threatMatches:find",
 		abuseIPDBURL:    "https://api.abuseipdb.com/api/v2/check",
 		virusTotalURL:   "https://www.virustotal.com/api/v3/files",
+		breakers:        map[string]*circuitBreaker{},
 	}
 	if dnsResolver != "" {
 		c.resolver = &net.Resolver{
@@ -63,6 +64,29 @@ func New(cfg config.Reputation, dnsResolver string, log zerolog.Logger) *Client 
 		c.resolver = net.DefaultResolver
 	}
 	return c
+}
+
+func (c *Client) allowProvider(name string) error {
+	c.breakerMu.Lock()
+	defer c.breakerMu.Unlock()
+	b := c.breakers[name]
+	if b == nil {
+		b = newCircuitBreaker(3, 30*time.Second)
+		c.breakers[name] = b
+	}
+	if !b.allow(time.Now()) {
+		return circuitError(name)
+	}
+	return nil
+}
+
+func (c *Client) observeProvider(name string, err error) {
+	c.breakerMu.Lock()
+	b := c.breakers[name]
+	c.breakerMu.Unlock()
+	if b != nil {
+		b.observe(time.Now(), err)
+	}
 }
 
 // AddLocalBlock adds a domain to the in-memory local TI list.
@@ -87,34 +111,47 @@ func (c *Client) IPListed(ctx context.Context, ip string) (bool, string, error) 
 		r := v.(listResult)
 		return r.listed, r.source, nil
 	}
-	rev := reverse4(parsed.To4())
 	var lastErr error
-	for _, zone := range c.cfg.DNSBL {
-		q := rev + "." + strings.TrimSuffix(zone, ".") + "."
-		addrs, err := c.resolver.LookupHost(ctx, q)
-		if err != nil {
-			var dnsErr *net.DNSError
-			if errors.As(err, &dnsErr) && dnsErr.IsNotFound {
-				continue // not listed
+	if err := c.allowProvider("dnsbl"); err != nil {
+		lastErr = err
+	} else {
+		rev := reverse4(parsed.To4())
+		for _, zone := range c.cfg.DNSBL {
+			q := rev + "." + strings.TrimSuffix(zone, ".") + "."
+			addrs, err := c.resolver.LookupHost(ctx, q)
+			if err != nil {
+				var dnsErr *net.DNSError
+				if errors.As(err, &dnsErr) && dnsErr.IsNotFound {
+					continue // not listed
+				}
+				lastErr = err
+				continue
 			}
-			lastErr = err
-			continue
+			for _, a := range addrs {
+				// DNSBL convention: 127.0.0.x = listed. Spamhaus 127.255.255.x = error
+				// (open resolver / query limit / typo) — must not count as listed.
+				if strings.HasPrefix(a, "127.255.") {
+					lastErr = fmt.Errorf("%s answered %s (blocked resolver or query limit)", zone, a)
+					break
+				}
+				if strings.HasPrefix(a, "127.") {
+					c.observeProvider("dnsbl", nil)
+					c.cache.set(key, listResult{true, zone}, 6*time.Hour)
+					return true, zone, nil
+				}
+			}
 		}
-		for _, a := range addrs {
-			// DNSBL convention: 127.0.0.x = listed. Spamhaus 127.255.255.x = error
-			// (open resolver / query limit / typo) — must not count as listed.
-			if strings.HasPrefix(a, "127.255.") {
-				lastErr = fmt.Errorf("%s answered %s (blocked resolver or query limit)", zone, a)
-				break
-			}
-			if strings.HasPrefix(a, "127.") {
-				c.cache.set(key, listResult{true, zone}, 6*time.Hour)
-				return true, zone, nil
-			}
-		}
+		c.observeProvider("dnsbl", lastErr)
 	}
 	if c.cfg.AbuseIPDB.Enabled {
-		listed, err := abuseIPDBLookup(ctx, c.http, c.abuseIPDBURL, ip, os.Getenv(c.cfg.AbuseIPDB.KeyEnv))
+		var listed bool
+		var err error
+		if breakerErr := c.allowProvider("abuseipdb"); breakerErr != nil {
+			err = breakerErr
+		} else {
+			listed, err = abuseIPDBLookup(ctx, c.http, c.abuseIPDBURL, ip, os.Getenv(c.cfg.AbuseIPDB.KeyEnv))
+			c.observeProvider("abuseipdb", err)
+		}
 		if err == nil && listed {
 			c.cache.set(key, listResult{true, "abuseipdb"}, 6*time.Hour)
 			return true, "abuseipdb", nil
@@ -143,7 +180,15 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 	}
 	providerError := false
 	if c.cfg.URLhaus.Enabled {
-		if listed, err := urlhausLookup(ctx, domain, os.Getenv(c.cfg.URLhaus.AuthKeyEnv)); err == nil && listed {
+		var listed bool
+		var err error
+		if breakerErr := c.allowProvider("urlhaus"); breakerErr != nil {
+			err = breakerErr
+		} else {
+			listed, err = urlhausLookup(ctx, domain, os.Getenv(c.cfg.URLhaus.AuthKeyEnv))
+			c.observeProvider("urlhaus", err)
+		}
+		if err == nil && listed {
 			c.cache.set(key, listResult{true, "urlhaus"}, 12*time.Hour)
 			return true, "urlhaus", nil
 		} else if err != nil {
@@ -151,7 +196,15 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 		}
 	}
 	if c.cfg.OpenPhish.Enabled {
-		if listed, err := openphishLookup(ctx, domain); err == nil && listed {
+		var listed bool
+		var err error
+		if breakerErr := c.allowProvider("openphish"); breakerErr != nil {
+			err = breakerErr
+		} else {
+			listed, err = openphishLookup(ctx, domain)
+			c.observeProvider("openphish", err)
+		}
+		if err == nil && listed {
 			c.cache.set(key, listResult{true, "openphish"}, 12*time.Hour)
 			return true, "openphish", nil
 		} else if err != nil {
@@ -159,7 +212,14 @@ func (c *Client) DomainListed(ctx context.Context, domain string) (bool, string,
 		}
 	}
 	if c.cfg.SafeBrowsing.Enabled {
-		listed, err := safeBrowsingLookup(ctx, c.http, c.safeBrowsingURL, domain, os.Getenv(c.cfg.SafeBrowsing.APIKeyEnv))
+		var listed bool
+		var err error
+		if breakerErr := c.allowProvider("safebrowsing"); breakerErr != nil {
+			err = breakerErr
+		} else {
+			listed, err = safeBrowsingLookup(ctx, c.http, c.safeBrowsingURL, domain, os.Getenv(c.cfg.SafeBrowsing.APIKeyEnv))
+			c.observeProvider("safebrowsing", err)
+		}
 		if err == nil && listed {
 			c.cache.set(key, listResult{true, "safebrowsing"}, 12*time.Hour)
 			return true, "safebrowsing", nil
@@ -179,7 +239,14 @@ func (c *Client) FileHashListed(ctx context.Context, sha256 string) (bool, strin
 	if !c.cfg.VirusTotal.Enabled || !c.cfg.VirusTotal.AttachmentsOnly || !isSHA256(sha256) {
 		return false, "", nil
 	}
-	listed, err := virusTotalLookup(ctx, c.http, c.virusTotalURL, sha256, os.Getenv(c.cfg.VirusTotal.KeyEnv))
+	var listed bool
+	var err error
+	if breakerErr := c.allowProvider("virustotal"); breakerErr != nil {
+		err = breakerErr
+	} else {
+		listed, err = virusTotalLookup(ctx, c.http, c.virusTotalURL, sha256, os.Getenv(c.cfg.VirusTotal.KeyEnv))
+		c.observeProvider("virustotal", err)
+	}
 	if err != nil {
 		return false, "", err
 	}
@@ -198,7 +265,11 @@ func (c *Client) DomainAge(ctx context.Context, domain string) (time.Duration, b
 	if v, ok := c.cache.get(key); ok {
 		return v.(time.Duration), true, nil
 	}
+	if err := c.allowProvider("rdap"); err != nil {
+		return 0, false, nil
+	}
 	age, err := rdapAge(ctx, domain)
+	c.observeProvider("rdap", err)
 	if err != nil {
 		// Provider outages, rate limits, and incomplete registry data are an
 		// unavailable signal, never a reason to fail or add a positive score.
